@@ -4,6 +4,7 @@ import Language.C
 import Language.C.System.GCC
 import Data.Aeson
 import Data.Text (Text, pack, unpack)
+import qualified Data.ByteString.UTF8 as BS
 
 {--
  - type CTranslUnit = CTranslationUnit NodeInfo
@@ -260,6 +261,11 @@ instance ToJSON CChar where
 
 instance ToJSON CFloat where
    toJSON (CFloat float) = object ["node" .= pack "CFloat", "float ".= pshow float]
+
+byteStringToAST :: BS.ByteString -> CTranslUnit
+byteStringToAST bs = case parseC bs (initPos "test.c") of
+   Left err -> error $ show err
+   Right ast -> ast
 
 getAST file = do
    parse_result <- parseCFile (newGCC "gcc") Nothing [] file

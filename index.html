@@ -20,17 +20,24 @@
          body {
             padding: 1em;
          }
+
+         #csource {
+            height: 300px;
+            width:70%;
+         }
+
       </style>
    </head>
    <body>
       <div class="container">
          <h1>C Interactive Interpreter</h1>
-         <div id="result"></div>
          <form id="cform" action="#">
-            <label for="csource">C Source</label><br>
+            <label for="csource">Please enter your C Source</label>
             <textarea id="csource" name="csource"></textarea><br>
-            <button type="submit" id="submit">Submit C Source</button>
+            <button type="submit" id="submit" class="btn btn-primary">Compile!</button>
          </form>
+         <h2>Result</h2>
+         <div id="result"></div>
       </div>
    </body>
 </html>

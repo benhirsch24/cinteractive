@@ -1,19 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Language
-
+import Data.Aeson
+import Data.Aeson.Encode (fromValue)
 import Data.Conduit as DC
 import Data.Conduit.Binary as CB
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Network.HTTP.Types
 import Blaze.ByteString.Builder (copyByteString)
+import Blaze.ByteString.Builder.Char8 (fromLazyText)
 import qualified Data.ByteString.UTF8 as BU
+import qualified Data.ByteString.Lazy as BL
 import Data.Monoid
 import Data.Enumerator (run_, enumList, ($$))
 import Data.Functor ((<$>))
 import Data.ByteString.Char8 (pack)
 import Control.Arrow ((>>>))
 import Data.Text (intercalate, unpack, splitOn)
+import Data.Text.Lazy.Builder (toLazyText)
+import Control.Monad.IO.Class (liftIO)
 
 appJson = "application/json"
 textPlain = "text/plain"
@@ -41,8 +46,8 @@ parse = do
    body <- await
    return $ ResponseBuilder status200 [ (hContentType, textPlain) ] $
       case body of
-         Nothing -> copyByteString . pack $ "{'text': 'blah'}"
-         Just (body) -> copyByteString . pack $ "{'text': 'blah'}"
+         Nothing -> mempty
+         Just body -> fromLazyText . toLazyText . fromValue . toJSON . byteStringToAST $ body
 
 index html = ResponseBuilder status200 [ (hContentType, "text/html; charset=utf-8") ] $ case html of
    Nothing -> copyByteString "<html><head><title>Whoops!</title></head><body><h1>Whoops! clearly something bad happened.</h1></body></html>"

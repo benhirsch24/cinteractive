@@ -1,0 +1,26 @@
+<html>
+   <head>
+      <title>C Interactive Interpreter</title>
+      <script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.js"></script>
+      <link rel="stylesheet" href="/static/css/boostrap.css">
+      <script>
+         $(document).ready(function() {
+            $("#cform").submit(function() {
+               $.post('http://localhost:3000/parse', $('#csource').val())
+                  .success(function(data){console.log(data);})
+                  .error(function(err) { $('#result').html(err)});
+               return false;
+            });
+         });
+      </script>
+   </head>
+   <body>
+      <h1>C Interactive Interpreter</h1>
+      <div id="result"></div>
+      <form id="cform" action="#">
+         <label for="csource">C Source</label><br>
+         <textarea id="csource" name="csource"></textarea><br>
+         <button type="submit" id="submit">Submit C Source</button>
+      </form>
+   </body>
+</html>

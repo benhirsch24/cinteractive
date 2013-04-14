@@ -1,5 +1,7 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
    <head>
+      <meta http-equiv="content-type" content="text/html; charset=utf-8">
       <title>C Interactive Interpreter</title>
       <script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.js"></script>
       <script>
@@ -12,14 +14,23 @@
             });
          });
       </script>
+      <link href="static/css/bootstrap.css" rel="stylesheet">
+      <style>
+         * { margin:0; padding: 0; }
+         body {
+            padding: 1em;
+         }
+      </style>
    </head>
    <body>
-      <h1>C Interactive Interpreter</h1>
-      <div id="result"></div>
-      <form id="cform" action="#">
-         <label for="csource">C Source</label><br>
-         <textarea id="csource" name="csource"></textarea><br>
-         <button type="submit" id="submit">Submit C Source</button>
-      </form>
+      <div class="container">
+         <h1>C Interactive Interpreter</h1>
+         <div id="result"></div>
+         <form id="cform" action="#">
+            <label for="csource">C Source</label><br>
+            <textarea id="csource" name="csource"></textarea><br>
+            <button type="submit" id="submit">Submit C Source</button>
+         </form>
+      </div>
    </body>
 </html>

@@ -12,19 +12,27 @@ import Data.Monoid
 import Data.Enumerator (run_, enumList, ($$))
 import Data.Functor ((<$>))
 import Data.ByteString.Char8 (pack)
+import Control.Arrow ((>>>))
+import Data.Text (intercalate, unpack, splitOn)
 
 appJson = "application/json"
 textPlain = "text/plain"
+textHtml = "text/html"
 
 main = do
    let port = 3000
    putStrLn $ "Listening on port " ++ show port
    run port app
 
+-- app :: Application
 app :: Request -> ResourceT IO Response
 app req =
    case pathInfo req of
       ["parse"] -> requestBody req DC.$$ parse
+      path@("static":rest) -> let filepath = unpack $ intercalate "/" path
+                                  ext = last . splitOn "." $ last rest
+                                  contentType = if ext == "css" then "text/css" else "text/plain"
+                              in  return $ ResponseFile status200 [ (hContentType, contentType) ] (unpack $ intercalate "/" path) Nothing
       x -> do
          ihtml <- CB.sourceFile "index.html" DC.$$ await
          return $ index ihtml
@@ -36,6 +44,6 @@ parse = do
          Nothing -> copyByteString . pack $ "{'text': 'blah'}"
          Just (body) -> copyByteString . pack $ "{'text': 'blah'}"
 
-index html = ResponseBuilder status200 [ ("Content-Type", "text/html") ] $ case html of
+index html = ResponseBuilder status200 [ (hContentType, "text/html; charset=utf-8") ] $ case html of
    Nothing -> copyByteString "<html><head><title>Whoops!</title></head><body><h1>Whoops! clearly something bad happened.</h1></body></html>"
    (Just html) -> copyByteString html

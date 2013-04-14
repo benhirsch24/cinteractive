@@ -263,7 +263,7 @@ instance ToJSON CFloat where
    toJSON (CFloat float) = object ["node" .= pack "CFloat", "float ".= pshow float]
 
 byteStringToAST :: BS.ByteString -> CTranslUnit
-byteStringToAST bs = case parseC bs (initPos "test.c") of
+byteStringToAST bs = case parseC bs (initPos "cfile.c") of
    Left err -> error $ show err
    Right ast -> ast
 

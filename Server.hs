@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+module Server where
 import Language
 import Data.Aeson
 import Data.Aeson.Encode (fromValue)
@@ -23,6 +24,7 @@ import Control.Monad.IO.Class (liftIO)
 appJson = "application/json"
 textPlain = "text/plain"
 textHtml = "text/html"
+textCSS = "text/css"
 
 ctHTML = [ (hContentType, textHtml) ]
 ctPlain = [ (hContentType, textPlain) ]
@@ -32,6 +34,13 @@ response200 = ResponseBuilder status200
 responseHtml = response200 ctHTML
 response400 = ResponseBuilder status400
 errorResponse = response400 ctHTML $ copyByteString "<html><head><title>Whoops!</title></head><body><h1>Whoops! clearly something bad happened.</h1></body></html>"
+
+fileResponse ct path = ResponseFile status200 ct path Nothing
+htmlFileResponse path = ResponseFile status200 ctHTML path Nothing
+
+resolveContentType "css" = textCSS
+resolveContentType "html" = textHtml
+resolveContentType _     = textPlain
 
 main = do
    let port = 3000
@@ -46,18 +55,14 @@ app req =
       ["parse"] -> requestBody req DC.$$ parse
       path@("static":rest) -> let filepath    = unpack $ intercalate "/" path
                                   ext         = last . splitOn "." $ last rest
-                                  contentType = if ext == "css" then "text/css" else "text/plain"
-                              in  return $ ResponseFile status200 [ (hContentType, contentType) ] (unpack $ intercalate "/" path) Nothing
-      x -> CB.sourceFile "index.html" DC.$$ index
+                                  contentType = resolveContentType ext
+                              in  return $ fileResponse [(hContentType, contentType)] $ unpack $ intercalate "/" path
+      _ -> return $ htmlFileResponse "index.html"
 
+parse :: Sink BU.ByteString (ResourceT IO) Response
 parse = do
    body <- await
    return $ case body of
       Nothing -> response400 ctPlain $ copyByteString "Error! Nothing received"
-      Just body -> response200 ctJson $ fromLazyText . toLazyText . fromValue . toJSON . byteStringToAST $ body
-
-index = do
-   html <- await
-   return $ case html of
-      Nothing -> errorResponse
-      (Just html) -> responseHtml $ copyByteString html
+      Just body -> let json = fromLazyText . toLazyText . fromValue . toJSON . byteStringToAST $ body
+                   in  response200 ctJson json

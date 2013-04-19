@@ -8,7 +8,7 @@
          $(document).ready(function() {
             $("#cform").submit(function() {
                $.post('http://localhost:3000/parse', $('#csource').val())
-                  .success(function(data){console.log(data);})
+                  .success(function(data){$('#result').html(JSON.stringify(data));})
                   .error(function(err) { $('#result').html(err)});
                return false;
             });

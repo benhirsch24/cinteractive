@@ -11,7 +11,7 @@ import qualified Data.ByteString.UTF8 as BS
  - data CTranslationUnit a = CTranslUnit [CExternalDeclaration a] a
  -}
 instance ToJSON CTranslUnit where
-   toJSON (CTranslUnit edecls _) = object ["node" .= pack "Root Translation Unit", "decls" .= map toJSON edecls]
+   toJSON (CTranslUnit edecls _) = object ["node" .= pack "CTranslUnit", "decls" .= map toJSON edecls]
 
 {--
  - type CExtDecl = CExternalDeclaration NodeInfo
@@ -23,7 +23,7 @@ instance ToJSON CTranslUnit where
 instance ToJSON CExtDecl where
    toJSON (CDeclExt decl) = toJSON decl
    toJSON (CFDefExt fund) = toJSON fund
-   toJSON (CAsmExt asmStmt _) = object ["node" .= pack "Assembly", "statement" .= pshow asmStmt]
+   toJSON (CAsmExt asmStmt _) = object ["node" .= pack "CAsmExt", "statement" .= pshow asmStmt]
 
 {--
  - type CFunDef = CFunctionDef NodeInfo
@@ -50,8 +50,8 @@ instance ToJSON CStat where
    toJSON (CCompound idents items _) = object ["node" .= pack "CCompound", "idents" .= map (pack . show) idents, "block_items" .= map toJSON items]
    toJSON (CIf expr stif stelse _) = object ["node" .= pack "CIf", "expr" .= toJSON expr, "true" .= toJSON stif, "false" .= toJSON stelse]
    toJSON (CSwitch expr stat _) = object ["node" .= pack "CSwitch", "expr" .= toJSON expr, "next" .= toJSON stat]
-   toJSON (CWhile guard stat dowhile _) = object ["node" .= if dowhile then pack "CDoWhile" else pack "CWhile", "expr" .= toJSON guard, "next" .= toJSON stat]
-   toJSON (CFor init expr2 expr3 stat _) = object ["node" .= pack "CFor", "init" .= initls, "expr2" .= toJSON expr2, "expr3" .= toJSON expr3, "next" .= stat]
+   toJSON (CWhile guard stat dowhile _) = object ["node" .= pack "CWhile", "guard" .= toJSON guard, "next" .= toJSON stat]
+   toJSON (CFor init guard step stat _) = object ["node" .= pack "CFor", "init" .= initls, "guard" .= toJSON guard, "step" .= toJSON step, "next" .= stat]
       where
       initls = case init of
          Right expr -> toJSON expr
@@ -162,49 +162,49 @@ instance ToJSON CAttr where
    toJSON (CAttr name params _) = object ["node" .= pack "CAttr", "name" .= pshow name, "params" .= map toJSON params]
 
 instance ToJSON CBinaryOp where
-   toJSON CMulOp = object ["node" .= pack "CMulOp"]
-   toJSON CDivOp = object ["node" .= pack "CDivOp"]
-   toJSON CRmdOp = object ["node" .= pack "CRmdOp"]
-   toJSON CAddOp = object ["node" .= pack "CAddOp"]
-   toJSON CSubOp = object ["node" .= pack "CSubOp"]
-   toJSON CShlOp = object ["node" .= pack "CShlOp"]
-   toJSON CShrOp = object ["node" .= pack "CShrOp"]
-   toJSON CLeOp  = object ["node" .= pack "CLeOp"]
-   toJSON CGrOp  = object ["node" .= pack "CGrOp"]
-   toJSON CLeqOp = object ["node" .= pack "CLeqOp"]
-   toJSON CGeqOp = object ["node" .= pack "CGeqOp"]
-   toJSON CEqOp  = object ["node" .= pack "CEqOp"]
-   toJSON CNeqOp = object ["node" .= pack "CNeqOp"]
-   toJSON CAndOp = object ["node" .= pack "CAndOp"]
-   toJSON CXorOp = object ["node" .= pack "CXorOp"]
-   toJSON COrOp  = object ["node" .= pack "COrOp"]
-   toJSON CLndOp = object ["node" .= pack "CLndOp"]
-   toJSON CLorOp = object ["node" .= pack "CLorOp"]
+   toJSON CMulOp = String $ pack "CMulOp"
+   toJSON CDivOp = String $ pack "CDivOp"
+   toJSON CRmdOp = String $ pack "CRmdOp"
+   toJSON CAddOp = String $ pack "CAddOp"
+   toJSON CSubOp = String $ pack "CSubOp"
+   toJSON CShlOp = String $ pack "CShlOp"
+   toJSON CShrOp = String $ pack "CShrOp"
+   toJSON CLeOp  = String $ pack "CLeOp"
+   toJSON CGrOp  = String $ pack "CGrOp"
+   toJSON CLeqOp = String $ pack "CLeqOp"
+   toJSON CGeqOp = String $ pack "CGeqOp"
+   toJSON CEqOp  = String $ pack "CEqOp"
+   toJSON CNeqOp = String $ pack "CNeqOp"
+   toJSON CAndOp = String $ pack "CAndOp"
+   toJSON CXorOp = String $ pack "CXorOp"
+   toJSON COrOp  = String $ pack "COrOp"
+   toJSON CLndOp = String $ pack "CLndOp"
+   toJSON CLorOp = String $ pack "CLorOp"
 
 instance ToJSON CUnaryOp where
-   toJSON CPreIncOp = object ["node" .= pack "CPreIncOp"]
-   toJSON CPreDecOp = object ["node" .= pack "CPreDecOp"]
-   toJSON CPostIncOp = object ["node" .= pack "CPostIncOp"]
-   toJSON CPostDecOp = object ["node" .= pack "CPostDecOp"]
-   toJSON CAdrOp = object ["node" .= pack "CAdrOp"]
-   toJSON CIndOp = object ["node" .= pack "CIndOp"]
-   toJSON CPlusOp = object ["node" .= pack "CPlusOp"]
-   toJSON CMinOp = object ["node" .= pack "CMinOp"]
-   toJSON CCompOp = object ["node" .= pack "CCompOp"]
-   toJSON CNegOp = object ["node" .= pack "CNegOp"]
+   toJSON CPreIncOp  = String $ pack "CPreIncOp"
+   toJSON CPreDecOp  = String $ pack "CPreDecOp"
+   toJSON CPostIncOp = String $ pack "CPostIncOp"
+   toJSON CPostDecOp = String $ pack "CPostDecOp"
+   toJSON CAdrOp     = String $ pack "CAdrOp"
+   toJSON CIndOp     = String $ pack "CIndOp"
+   toJSON CPlusOp    = String $ pack "CPlusOp"
+   toJSON CMinOp     = String $ pack "CMinOp"
+   toJSON CCompOp    = String $ pack "CCompOp"
+   toJSON CNegOp     = String $ pack "CNegOp"
 
 instance ToJSON CAssignOp where
-   toJSON CAssignOp = object ["node" .= pack "CAssignOp"]
-   toJSON CMulAssOp = object ["node" .= pack "CMulAssOp"]
-   toJSON CDivAssOp = object ["node" .= pack "CDivAssOp"]
-   toJSON CRmdAssOp = object ["node" .= pack "CRmdAssOp"]
-   toJSON CAddAssOp = object ["node" .= pack "CAddAssOp"]
-   toJSON CSubAssOp = object ["node" .= pack "CSubAssOp"]
-   toJSON CShlAssOp = object ["node" .= pack "CShlAssOp"]
-   toJSON CShrAssOp = object ["node" .= pack "CShrAssOp"]
-   toJSON CAndAssOp = object ["node" .= pack "CAndAssOp"]
-   toJSON CXorAssOp = object ["node" .= pack "CXorAssOp"]
-   toJSON COrAssOp = object ["node" .= pack "COrAssOp"]
+   toJSON CAssignOp = String $ pack "CAssignOp"
+   toJSON CMulAssOp = String $ pack "CMulAssOp"
+   toJSON CDivAssOp = String $ pack "CDivAssOp"
+   toJSON CRmdAssOp = String $ pack "CRmdAssOp"
+   toJSON CAddAssOp = String $ pack "CAddAssOp"
+   toJSON CSubAssOp = String $ pack "CSubAssOp"
+   toJSON CShlAssOp = String $ pack "CShlAssOp"
+   toJSON CShrAssOp = String $ pack "CShrAssOp"
+   toJSON CAndAssOp = String $ pack "CAndAssOp"
+   toJSON CXorAssOp = String $ pack "CXorAssOp"
+   toJSON COrAssOp =  String $ pack "COrAssOp"
 
 
 instance ToJSON CExpr where

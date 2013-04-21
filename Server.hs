@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Server where
 import Language
 import Data.Aeson
 import Data.Aeson.Encode (fromValue)
@@ -20,11 +19,13 @@ import Control.Arrow ((>>>))
 import Data.Text (intercalate, unpack, splitOn)
 import Data.Text.Lazy.Builder (toLazyText)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Class (lift)
 
 appJson = "application/json"
 textPlain = "text/plain"
 textHtml = "text/html"
 textCSS = "text/css"
+textJS = "text/javascript"
 
 ctHTML = [ (hContentType, textHtml) ]
 ctPlain = [ (hContentType, textPlain) ]
@@ -40,6 +41,7 @@ htmlFileResponse path = ResponseFile status200 ctHTML path Nothing
 
 resolveContentType "css" = textCSS
 resolveContentType "html" = textHtml
+resolveContentType "js"  = textJS
 resolveContentType _     = textPlain
 
 main = do
@@ -64,5 +66,8 @@ parse = do
    body <- await
    return $ case body of
       Nothing -> response400 ctPlain $ copyByteString "Error! Nothing received"
-      Just body -> let json = fromLazyText . toLazyText . fromValue . toJSON . byteStringToAST $ body
-                   in  response200 ctJson json
+      Just body -> let ast = byteStringToAST body
+                   in  case ast of
+                           Right ast -> let json = fromLazyText . toLazyText . fromValue . toJSON $ ast
+                                        in  response200 ctJson json
+                           Left  err -> response400 ctPlain $ fromString $ show err

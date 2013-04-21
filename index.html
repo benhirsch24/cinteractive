@@ -3,41 +3,165 @@
    <head>
       <meta http-equiv="content-type" content="text/html; charset=utf-8">
       <title>C Interactive Interpreter</title>
-      <script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.js"></script>
+      <link href="static/css/smoothness/jquery-ui-1.10.2.custom.css" rel="stylesheet">
+      <script type="text/javascript" src="static/js/jquery-1.9.1.js"></script>
+      <script src="static/js/jquery-ui-1.10.2.custom.js"></script>
+      <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/lodash.js/1.2.0/lodash.js"></script>
+      <script type="text/javascript" src="static/js/interp/prettyprint.js"></script>
       <script>
+         function unquotify(str) {
+            str = str.slice(1);
+            return str.slice(0, str.length - 1);
+         }
+
+         function fun_args(fun) {
+            var ret = '<div id="args">';
+            ret += '<ul class="args">';
+            _(fun["attrs"][0]["params"]).map(function(p) {
+               ret += '<li class="arg">';
+               ret += print_type(p["specifiers"][0]["spec"]["node"]);
+               ret += "&nbsp;&nbsp;&nbsp;";
+               ret += "<input type='text' class='param' value='";
+               ret += unquotify(p["declarations"][0]['0']["name"]);
+               ret += "'>";
+               ret += '</li>';
+            });
+            ret += '</ul>';
+            ret += '</div>';
+            return ret;
+         }
+
+         function receiveAST(data) {
+            $('#source').html(ipprint(data));
+
+            if (data["node"] !== "CTranslUnit") {
+               $('#functions').html('error');
+               return;
+            }
+
+            // create an li for each decl
+            _(data["decls"]).map('fun_def').map(function(fun) {
+               $('#functions').append('<h3>' + unquotify(fun["name"]) + fun_args(fun) + '</h3><div class="context"></div>');
+            });
+            $('#functions').accordion();
+         }
+
          $(document).ready(function() {
-            $("#cform").submit(function() {
-               $.post('http://localhost:3000/parse', $('#csource').val())
-                  .success(function(data){$('#result').html(JSON.stringify(data));})
-                  .error(function(err) { $('#result').html(err)});
+            $('#code').focus();
+            $("#compile").click(function() {
+               $('#functions').empty();
+               $('#source').empty();
+               $.post('http://localhost:3000/parse', $('#code').val())
+                  .success(receiveAST)
+                  .error(function(err) { $('#functions').html(err)});
                return false;
             });
          });
       </script>
-      <link href="static/css/bootstrap.css" rel="stylesheet">
+      <!--<link href="static/css/bootstrap.css" rel="stylesheet">-->
       <style>
          * { margin:0; padding: 0; }
          body {
             padding: 1em;
          }
 
-         #csource {
-            height: 300px;
-            width:70%;
+         #topbar {
+            background-color:#126B00;
          }
 
+         #toplinks {
+            list-style: none;
+            position: absolute;
+            right: 0;
+         }
+
+         #toplinks li a {
+            color: #fff;
+         }
+
+         #compile {
+            margin-bottom: .5em;
+         }
+
+         #code {
+            clear: both;
+            padding: .5em;
+            border: 0;
+            width: 60%;
+            min-height: 500px;
+            float: left;
+         }
+
+         #controls {
+            margin-left: 61%;
+            padding: .5em;
+         }
+
+         #steps {
+            text-align: center;
+            margin-bottom:1em;
+         }
+
+         #functions {
+            margin-bottom: 1em;
+         }
+
+         #args {
+            position: absolute;
+            right: 0;
+            padding-right: 1em;
+            list-style: none;
+            display: inline;
+            font-size: 12px;
+         }
+
+         #args li {
+            display: inline;
+         }
+
+         .param {
+            width: 50px;
+         }
       </style>
    </head>
    <body>
       <div class="container">
-         <h1>C Interactive Interpreter</h1>
-         <form id="cform" action="#">
-            <label for="csource">Please enter your C Source</label>
-            <textarea id="csource" name="csource"></textarea><br>
-            <button type="submit" id="submit" class="btn btn-primary">Compile!</button>
-         </form>
-         <h2>Result</h2>
-         <div id="result"></div>
+         <button id="compile">Compile</button>
+         <div id="topbar">
+            <ul id="toplinks">
+               <li><a href="#" id="compile">Compile</a></li>
+            </ul>
+         </div>
+
+<textarea id="code">
+int dup(int num) {
+   int i;
+   for (i = 0; i &lt; num; i++)
+      num = num + 1;
+   
+   return num;
+}
+
+int main(int argc, char **argv) {
+   int num = 5;
+   num = dup(num);
+   printf("%d\n", num);
+   
+   return 0;
+}</textarea>
+         <div id="controls">
+            <div id="steps">
+               <h3>Step</h3>
+               <br>
+               <input type="range" name="step" id="step" min="1" max="10">
+            </div>
+            <ul id="functions">
+            </ul>
+            <div id="source">
+            </div>
+         </div>
+
+         <br style="clear: both;">
       </div>
    </body>
 </html>

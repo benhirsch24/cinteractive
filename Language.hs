@@ -78,7 +78,9 @@ instance ToJSON CDesignator where
    toJSON (CRangeDesig expr1 expr2 _) = object ["node" .= pack "CRangeDesig", "from" .= toJSON expr1, "to" .= toJSON expr2]
 
 instance ToJSON CDecl where
-   toJSON (CDecl specs decls _) = object ["node" .= pack "CDecl", "specifiers" .= map toJSON specs, "declarations" .= map toJSON decls]
+   toJSON (CDecl specs decls _) = object ["node" .= pack "CDecl", "specifiers" .= map toJSON specs, "declarations" .= map ppDecl decls]
+      where
+      ppDecl (decltr, initzr, expr) = toJSON [toJSON decltr, toJSON initzr, toJSON expr]
 
 instance ToJSON CDeclr where
    toJSON (CDeclr name indirections asmname cattrs _) = object ["node" .= pack "CDeclr", "name" .= maybe "anonymous" show name, "attrs" .= map toJSON indirections]
@@ -211,7 +213,7 @@ instance ToJSON CExpr where
    toJSON (CComma exprs _) = object ["node" .= pack "CComma", "exprs" .= map toJSON exprs]-- comma expr list n >= 2
    toJSON (CAssign op lvalue rvalue _) = object ["node" .= pack "CAssign", "op" .= toJSON op, "lvalue" .= toJSON lvalue, "rvalue" .= toJSON rvalue]
    toJSON (CCond cond texpr fexpr _) = object ["node" .= pack "CCond", "cond" .= toJSON cond, "true" .= toJSON texpr, "false" .= toJSON fexpr]
-   toJSON (CBinary op lhs rhs _) = object ["node" .= pack "CBinary", "op" .= toJSON op, "lhs" .= toJSON lhs, "rhs" .= toJSON rhs]
+   toJSON (CBinary op erand1 erand2 _) = object ["node" .= pack "CBinary", "op" .= toJSON op, "erand1" .= toJSON erand1, "erand2" .= toJSON erand2]
    toJSON (CCast decl expr _) = object ["node" .= pack "CCast", "type" .= toJSON decl, "expr" .= toJSON expr]
    toJSON (CUnary op expr _) = object ["node" .= pack "CUnary", "op" .= toJSON op, "expr" .= toJSON expr]
    toJSON (CSizeofExpr expr _) = object ["node" .= pack "CSizeofExpr", "expr" .= toJSON expr]
@@ -235,37 +237,35 @@ instance ToJSON CBuiltin where
    toJSON (CBuiltinOffsetOf decl desigs _) = object ["node" .= pack "CBuiltinOffsetOf", "type" .= toJSON decl, "designator-list" .= map toJSON desigs]
    toJSON (CBuiltinTypesCompatible decl1 decl2 _) = object ["node" .= pack "CBuiltinTypesCompatible", "type1" .= toJSON decl1, "type2" .= toJSON decl2]
 
-instance ToJSON CConst where
+instance ToJSON CConst where --i
    toJSON (CIntConst int _) = object ["node" .= pack "CIntConst", "val" .= toJSON int]
    toJSON (CCharConst char _) = object ["node" .= pack "CCharConst", "val" .= toJSON char]
    toJSON (CFloatConst float _) = object ["node" .= pack "CFloatConst", "val" .= toJSON float]
    toJSON (CStrConst str _) = object ["node" .= pack "CStrConst", "val" .= toJSON str]
 
-instance ToJSON CString where
+instance ToJSON CString where --i
    toJSON (CString str _) = object ["node" .= pack "CString", "string" .= pshow str]
 
-instance ToJSON CStrLit where
+instance ToJSON CStrLit where --i
    toJSON (CStrLit str _) = object ["node" .= pack "CStrLit", "string" .= toJSON str]
 
-instance ToJSON CInteger where
+instance ToJSON CInteger where --i
    toJSON (CInteger int base (Flags flag)) = object ["node" .= pack "CInteger", "int" .= pshow int, "base" .= pshow base, "flags" .= pshow flag]
 
-instance Show CIntRepr where
+instance Show CIntRepr where --i
    show DecRepr = "d"
    show HexRepr = "x"
    show OctalRepr = "o"
 
-instance ToJSON CChar where
+instance ToJSON CChar where --i
    toJSON (CChar char _) = object ["node" .= pack "CChar", "char" .= pshow char]
    toJSON (CChars chars _) = object ["node" .= pack "CChars", "chars" .= pshow chars]
 
-instance ToJSON CFloat where
+instance ToJSON CFloat where --i
    toJSON (CFloat float) = object ["node" .= pack "CFloat", "float ".= pshow float]
 
-byteStringToAST :: BS.ByteString -> CTranslUnit
-byteStringToAST bs = case parseC bs (initPos "cfile.c") of
-   Left err -> error $ show err
-   Right ast -> ast
+byteStringToAST :: BS.ByteString -> Either ParseError CTranslUnit
+byteStringToAST bs = parseC bs (initPos "cfile.c")
 
 getAST file = do
    parse_result <- parseCFile (newGCC "gcc") Nothing [] file

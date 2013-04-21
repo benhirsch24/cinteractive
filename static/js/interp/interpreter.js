@@ -9,12 +9,97 @@
  * 
  */
 
+// Monadic plumbing, essentially: forM nodes eval
+function sequenceEval(nodes, env) {
+   var vals = [];
+   var ret;
+
+   for (var i = 0; i < nodes.length; i++) {
+      ret = eval(nodes[i], env);
+      vals.push(ret.val);
+      env = ret.env;
+   }
+
+   return {vals: vals, env: env};
+};
+
 evalNode = {};
 evalNode["CTranslUnit"] = function(node, env) {
    
 };
 evalNode["CFunDef"] = function(node, env) {
 
+};
+
+evalNode["CMulOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a * b, env: env};
+   };
+};
+evalNode["CDivOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a / b, env: env};
+   };
+};
+evalNode["CRmdOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a % b, env: env};
+   };
+};
+evalNode["CAndOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a && b, env: env};
+   };
+};
+evalNode["COrOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a || b, env: env};
+   };
+};
+evalNode["CXorOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a ^ b, env: env};
+   };
+};
+evalNode["CNeqOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a !== b, env: env};
+   };
+};
+evalNode["CEqOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a === b, env: env};
+   };
+};
+evalNode["CGeqOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a >= b, env: env};
+   };
+};
+evalNode["CLeqOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a <= b, env: env};
+   };
+};
+evalNode["CLeOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a < b, env: env};
+   };
+};
+evalNode["CGrOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a > b, env: env};
+   };
+};
+evalNode["CAddOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a + b, env: env};
+   };
+};
+evalNode["CSubOp"] = function(node, env) {
+   return function(a, b, env) {
+      return {val: a -b, env: env};
+   };
 };
 
 /**
@@ -33,11 +118,22 @@ evalNode["CUnary"] = function(node, env) {
 
    switch (node["op"]) {
       case "CNegOp":
-         ret = val.val;
+         ret = -val.val;
          break;
    }
 
    return {val: val.val, env: val.env};
+};
+evalNode["CBinary"] = function(node, env) {
+   var vals = sequenceEval(["op", "erand1", "erand2"], env);
+   var fun = vals[0],
+       erand1 = vals[1],
+       erand2 = vals[2];
+
+   if (typeof(fun) !== 'function')
+      throw "Not a function";
+
+   return fun(erand1, erand2, env);
 };
 evalNode["CCall"] = function(node, env) {
    var arg, fun,
@@ -104,7 +200,46 @@ evalNode["CReturn"] = function(node, env) {
    return eval(node["expr"], env);
 };
 
+/**
+ * Values
+ */
+evalNode["CCharConst"] = evalNode["CFloatConst"] = evalNode["CStrConst"] = evalNode["CIntConst"] = function(node, env) {
+   // we know val is a CInteger, doesn't change env
+   return eval(node["val"], env);
+};
+evalNode["CStr"] = function(node, env) {
+   return {val: node["string"], env: env};
+};
+evalNode["CStrLit"] = function(node, env) {
+   return {val: node["string"], env: env};
+};
+evalNode["CInteger"] = function(node, env) {
+   var radix;
+   switch (node["base"]) {
+      case "d":
+         radix = 10;
+         break;
+      case "o":
+         radix = 8;
+         break;
+      case "x":
+         radix = 16;
+         break;
+   }
+   return {val: parseInt(node["int"], radix), env: env};
+};
+evalNode["CChar"] = function(node, env) {
+   return {val: node["char"], env: env};
+};
+evalNode["CChars"] = function(node, env) {
+   return {val: node["chars"], env: env};
+};
+evalNode["CFloat"] = function(node, env) {
+   return {val: parseFloat(node["float"]), env: env};
+};
+
 function eval(node, env) {
-   evalNode[node["node"], env];
+   return evalNode[node["node"], env];
 }
+
 

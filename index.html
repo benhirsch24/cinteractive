@@ -16,18 +16,18 @@
 
          function fun_args(fun) {
             var ret = '<div id="args">';
-            ret += '<ul class="args">';
-            _(fun["attrs"][0]["params"]).map(function(p) {
-               ret += '<li class="arg">';
-               ret += print_type(p["specifiers"][0]["spec"]["node"]);
-               ret += "&nbsp;&nbsp;&nbsp;";
-               ret += "<input type='text' class='param' value='";
-               ret += unquotify(p["declarations"][0]['0']["name"]);
-               ret += "'>";
-               ret += '</li>';
-            });
-            ret += '</ul>';
-            ret += '</div>';
+               ret += '<ul class="args">';
+                  _(fun["attrs"][0]["params"]).map(function(p) {
+                     ret += '<li class="arg">';
+                     ret += print_type(p["specifiers"][0]["spec"]["node"]);
+                     ret += "&nbsp;&nbsp;&nbsp;";
+                     ret += "<input type='text' class='param' value='";
+                     ret += unquotify(p["declarations"][0]['0']["name"]);
+                     ret += "'>";
+                     ret += '</li>';
+                  });
+                  ret += '</ul>';
+               ret += '</div>';
             return ret;
          }
 
@@ -41,7 +41,7 @@
 
             // create an li for each decl
             _(data["decls"]).map('fun_def').map(function(fun) {
-               $('#functions').append('<h3>' + unquotify(fun["name"]) + fun_args(fun) + '</h3><div class="context"></div>');
+               $('#functions').append('<h3>' + unquotify(fun["name"]) + fun_args(fun) + '</h3><div class="context"><a href="#" data-function="' + unquotify(fun["name"]) + '">Run</a></div>');
             });
             $('#functions').accordion();
          }
@@ -52,8 +52,8 @@
                $('#functions').empty();
                $('#source').empty();
                $.post('http://localhost:3000/parse', $('#code').val())
-                  .success(receiveAST)
-                  .error(function(err) { $('#functions').html(err)});
+               .success(receiveAST)
+               .error(function(err) { $('#functions').html(err)});
                return false;
             });
          });
@@ -63,6 +63,45 @@
          * { margin:0; padding: 0; }
          body {
             padding: 1em;
+         }
+
+         textarea{
+            width:400px;
+
+            /* The following three rules make a difference in the script */
+            overflow:hidden;
+            line-height: 13px;
+            font-size: 13px;
+
+
+            border:1px solid #999;
+            padding:10px;
+            font-family: monospace;
+            margin:0;
+            display:block;
+            outline:none;
+         }
+         textarea:focus{
+            border-color:#333;
+         }
+         .codecontainer{
+            position:relative;
+            display:inline-block;
+            margin-left: 2%;
+            float: left;
+         }
+         .line-nums{
+            font-size:13px;
+            line-height:13px;
+            padding:10px 4px;
+            font-family: monospace;
+            background: #EEE;
+            position: absolute;
+            width: 20px;
+            left: -28px;
+            bottom: 0;
+            top: 0;
+            text-align:right;
          }
 
          #topbar {
@@ -87,19 +126,21 @@
             clear: both;
             padding: .5em;
             border: 0;
-            width: 60%;
+            min-width: 700px;
             min-height: 500px;
-            float: left;
          }
 
          #controls {
-            margin-left: 61%;
-            padding: .5em;
+            margin-left: 730px;
          }
 
          #steps {
             text-align: center;
             margin-bottom:1em;
+         }
+
+         #step {
+            width: 90%;
          }
 
          #functions {
@@ -132,28 +173,33 @@
                <li><a href="#" id="compile">Compile</a></li>
             </ul>
          </div>
+         <div class="codecontainer">
+            <div class="line-nums">
 
+            </div>
 <textarea id="code">
 int dup(int num) {
    int i;
+   int a;
    for (i = 0; i &lt; num; i++)
-      num = num + 1;
-   
-   return num;
+      a = num + 1;
+
+   return a;
 }
 
 int main(int argc, char **argv) {
    int num = 5;
    num = dup(num);
    printf("%d\n", num);
-   
+
    return 0;
 }</textarea>
+         </div>
          <div id="controls">
             <div id="steps">
                <h3>Step</h3>
                <br>
-               <input type="range" name="step" id="step" min="1" max="10">
+               <input type="range" name="step" id="step" min="1" max="10" value="0">
             </div>
             <ul id="functions">
             </ul>
@@ -163,5 +209,32 @@ int main(int argc, char **argv) {
 
          <br style="clear: both;">
       </div>
+      <script type="text/javascript" src="static/js/behave.js"></script>
+      <script type="text/javascript">
+         var lineNumberFunc = function(data) {
+            var numLines = data.lines.total,
+               house = $('.line-nums'),
+               html = '',
+               i;
+
+            for (i = 0; i < numLines; i++) {
+               html += '<div>' + (i + 1) + '</div>';
+            }
+
+            house.html(html);
+         };
+         BehaveHooks.add(['init-after', 'keydown'], lineNumberFunc);
+
+         var editor = new Behave({
+            textarea: document.getElementById('code'),
+            replaceTab: true,
+            softTabs: true,
+            tabSize: 3,
+            autoStrip: true,
+            overwrite: true,
+            autoOpen: true,
+            autoIndent: true
+         });
+         </script>
    </body>
 </html>

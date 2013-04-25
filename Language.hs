@@ -80,7 +80,17 @@ instance ToJSON CDesignator where
 instance ToJSON CDecl where
    toJSON (CDecl specs decls _) = object ["node" .= pack "CDecl", "specifiers" .= map toJSON specs, "declarations" .= map ppDecl decls]
       where
-      ppDecl (decltr, initzr, expr) = toJSON [toJSON decltr, toJSON initzr, toJSON expr]
+      ppDecl (decltr, initzr, expr) = object ["node" .= pack "DECL", "declarator" .= declhuh, "initializer" .= inithuh, "expr" .= exprhuh]
+         where
+         declhuh = case decltr of
+                     Just decltr -> toJSON decltr
+                     Nothing     -> toJSON (Nothing :: Maybe CDeclr)
+         inithuh = case initzr of
+                     Nothing -> toJSON (Nothing :: Maybe CInit)
+                     Just initzr -> toJSON initzr
+         exprhuh = case expr of
+                     Nothing -> toJSON (Nothing :: Maybe CExpr)
+                     Just expr -> toJSON expr
 
 instance ToJSON CDeclr where
    toJSON (CDeclr name indirections asmname cattrs _) = object ["node" .= pack "CDeclr", "name" .= maybe "anonymous" show name, "attrs" .= map toJSON indirections]

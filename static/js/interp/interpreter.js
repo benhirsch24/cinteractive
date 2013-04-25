@@ -23,12 +23,79 @@ function sequenceEval(nodes, env) {
    return {vals: vals, env: env};
 };
 
+function initialValue(type) {
+   var val = 0;
+
+   /*
+    * if (type = blah) {
+    * }
+    *
+    */
+
+   return val;
+}
+
+function AddToEnv(name, value, env) {
+   env.stack[name] = env.next;
+   env.heap[env.next] = value;
+   env.next = env.next + 1;
+   return env;
+}
+
+// TODO: rest of specifiers
+function evalSpecifiers(specs, env) {
+   var type = '';
+
+   _(specs).map(function(s) {
+      switch(s['spec']['node']) {
+         case 'CUnsigType':
+            type += 'unsigned ';
+            break;
+         case 'CIntType':
+            type += 'int ';
+            break;
+         default:
+            type += 'UNKNOWN ';
+            break;
+      }
+   });
+
+   type = type.slice(0, type.length - 1);
+}
+
+var compileDecl = {};
+compileDecl["CDecl"] = function(node, env) {
+   var type = evalSpecifiers(node["specifiers"]);
+
+   _(node["declarations"]).map(function(d) {
+      var name = d['declarator']['name'];
+      env = AddToEnv(name, initialValue(type), env);
+   });
+
+   return env;
+};
+
+compileDecl["CFunDef"] = function(node, env) {
+   return AddToEnv(node["fun_def"]["name"], node, env);
+};
+
+function evalAST(ast) {
+   var env = {stack: {}, heap: {}, next: 0};
+   var decls = ast["decls"];
+
+   _(decls).map(function(n) {
+      env = compileDecl[n["node"]](n, env);
+   });
+
+   return env;
+}
+
 evalNode = {};
 evalNode["CTranslUnit"] = function(node, env) {
    
 };
 evalNode["CFunDef"] = function(node, env) {
-
+   
 };
 
 evalNode["CMulOp"] = function(node, env) {

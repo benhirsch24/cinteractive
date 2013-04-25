@@ -8,7 +8,11 @@
       <script src="static/js/jquery-ui-1.10.2.custom.js"></script>
       <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/lodash.js/1.2.0/lodash.js"></script>
       <script type="text/javascript" src="static/js/interp/prettyprint.js"></script>
+      <script type="text/javascript" src="static/js/interp/interpreter.js"></script>
       <script>
+         // THIS IS THE STATE OF THE INTERPRETER
+         var state;
+
          function unquotify(str) {
             str = str.slice(1);
             return str.slice(0, str.length - 1);
@@ -22,7 +26,7 @@
                      ret += print_type(p["specifiers"][0]["spec"]["node"]);
                      ret += "&nbsp;&nbsp;&nbsp;";
                      ret += "<input type='text' class='param' value='";
-                     ret += unquotify(p["declarations"][0]['0']["name"]);
+                     ret += unquotify(p["declarations"][0]['declarator']["name"]);
                      ret += "'>";
                      ret += '</li>';
                   });
@@ -40,10 +44,18 @@
             }
 
             // create an li for each decl
-            _(data["decls"]).map('fun_def').map(function(fun) {
+            _(data["decls"])
+               .filter(function(node) {
+                  if (node["node"] === "CFunDef") return true; else return false;})
+               .map('fun_def')
+               .map(function(fun) {
                $('#functions').append('<h3>' + unquotify(fun["name"]) + fun_args(fun) + '</h3><div class="context"><a href="#" data-function="' + unquotify(fun["name"]) + '">Run</a></div>');
             });
             $('#functions').accordion();
+
+
+            env = evalAST(data);
+            console.log(env);
          }
 
          $(document).ready(function() {
@@ -127,11 +139,14 @@
             padding: .5em;
             border: 0;
             min-width: 700px;
-            min-height: 500px;
+            min-height: 300px;
          }
 
          #controls {
+            position:absolute;
             margin-left: 730px;
+            max-width: 450px;
+            width: 100%;
          }
 
          #steps {
@@ -163,6 +178,11 @@
          .param {
             width: 50px;
          }
+
+         #memory-container {
+            width: 700px;
+            padding:1em;
+         }
       </style>
    </head>
    <body>
@@ -178,6 +198,8 @@
 
             </div>
 <textarea id="code">
+unsigned int global_var, global_twar = 3;
+
 int dup(int num) {
    int i;
    int a;
@@ -208,6 +230,15 @@ int main(int argc, char **argv) {
          </div>
 
          <br style="clear: both;">
+      </div>
+      <div id="memory-container">
+         <h2>Memory</h2>
+         <ul id="memory">
+            <li class="entry">
+            <span class="loc">0:</span>
+            <span class="value">0xDEAD</span>
+            </li>
+         </ul>
       </div>
       <script type="text/javascript" src="static/js/behave.js"></script>
       <script type="text/javascript">

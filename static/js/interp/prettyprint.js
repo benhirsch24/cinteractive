@@ -19,7 +19,7 @@ function print_type(type) {
 
 function pprint(ast, level) {
    var ccat = function(w, s) { return w + s; }
-   var ident = _.range(level).map(function(){return "&nbsp;&nbsp;&nbsp;"}).reduce(ccat, '');
+   var ident = _.range(level).map(function(){return "..."}).reduce(ccat, '');
    var br = "<br>",
        si = "<strong>",
        sc = "</strong>";

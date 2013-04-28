@@ -1,0 +1,149 @@
+* { 
+  margin:0; padding: 0; 
+}
+
+body {
+   padding: 1em;
+}
+
+textarea{
+   width:400px;
+
+   /* The following three rules make a difference in the script */
+   overflow:hidden;
+   line-height: 13px;
+   font-size: 13px;
+
+
+   border:1px solid #999;
+   padding:10px;
+   font-family: monospace;
+   margin:0;
+   display:block;
+   outline:none;
+}
+textarea:focus{
+   border-color:#333;
+}
+.codecontainer{
+   position:relative;
+   display:inline-block;
+   margin-left: 2%;
+   float: left;
+}
+.line-nums{
+   font-size:13px;
+   line-height:13px;
+   padding:10px 4px;
+   font-family: monospace;
+   background: #EEE;
+   position: absolute;
+   width: 20px;
+   left: -28px;
+   bottom: 0;
+   top: 0;
+   text-align:right;
+}
+
+#topbar {
+   background-color:#126B00;
+}
+
+#toplinks {
+   list-style: none;
+   position: absolute;
+   right: 0;
+}
+
+#toplinks li a {
+   color: #fff;
+}
+
+#compile {
+   margin-bottom: .5em;
+}
+
+#code {
+   clear: both;
+   padding: .5em;
+   border: 0;
+   min-width: 700px;
+   min-height: 300px;
+}
+
+#controls {
+   position:absolute;
+   margin-left: 730px;
+   max-width: 450px;
+   width: 100%;
+}
+
+#steps {
+   text-align: center;
+   margin-bottom:1em;
+}
+
+#step {
+   width: 90%;
+}
+
+#functions {
+   margin-bottom: 1em;
+}
+
+#source {
+   height: 500px;
+   overflow: scroll;
+}
+
+#source.enlarge {
+   height: 100%;
+   position:fixed;
+   top:0;
+   left:0;
+   background-color:#fff;
+   width: 100%;
+}
+
+#args {
+   position: absolute;
+   right: 0;
+   padding-right: 1em;
+   list-style: none;
+   display: inline;
+   font-size: 12px;
+}
+
+#args li {
+   display: inline;
+}
+
+.param {
+   width: 50px;
+}
+
+#memory-container {
+   width: 700px;
+   padding:1em;
+}
+
+#memory {
+   list-style: none;
+   padding: 1em;
+}
+
+#memory .mem {
+   padding: .7em;
+}
+
+#memory .loc {
+   border: 1px solid black;
+   display:inline;
+   padding: .5em;
+   margin-right: .3em;
+}
+
+#memory .value {
+   display:inline;
+   padding: .5em;
+}

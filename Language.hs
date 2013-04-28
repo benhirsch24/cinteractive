@@ -277,6 +277,9 @@ instance ToJSON CFloat where --i
 byteStringToAST :: BS.ByteString -> Either ParseError CTranslUnit
 byteStringToAST bs = parseC bs (initPos "cfile.c")
 
+partialAST :: BS.ByteString -> Either ParseError (CStat, [Name])
+partialAST bs = execParser statementP bs (initPos "partial.c") builtinTypeNames newNameSupply
+
 getAST file = do
    parse_result <- parseCFile (newGCC "gcc") Nothing [] file
    case parse_result of

@@ -9,14 +9,11 @@
       <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/lodash.js/1.2.0/lodash.js"></script>
       <script type="text/javascript" src="static/js/interp/prettyprint.js"></script>
       <script type="text/javascript" src="static/js/interp/interpreter.js"></script>
+      <script type="text/javascript" src="static/js/interp/stepper.js"></script>
+      <!-- TODO: really should learn a module system or something for the javascript -->
       <script>
          // THIS IS THE STATE OF THE INTERPRETER
-         var state;
-
-         function unquotify(str) {
-            str = str.slice(1);
-            return str.slice(0, str.length - 1);
-         }
+         var glState;
 
          function fun_args(fun) {
             var ret = '<div id="args">';
@@ -35,13 +32,52 @@
             return ret;
          }
 
+         function updateMemory(st) {
+            var mem = $('#memory');
+            mem.empty();
+
+            var stack = $('#stack');
+            $('#stack .var_row').remove();
+
+            _(st.heap).forIn(function(value, loc) {
+               var li = $('<li></li>');
+               li.addClass('mem');
+               li.html('<span class="loc">' + loc + '</span>' + '<span class="value">' + ppMemValue(value) + '</span>');
+               mem.append(li);
+            });
+
+            var num_frames = st.stack.length;
+            _(st.stack).map(function(frame, frameIdx){
+               _(frame).forIn(function(addr, name) {
+                  var var_row = $('<tr></tr>');
+                  var_row.addClass('var_row');
+                  if (frameIdx === num_frames - 1)
+                     var_row.addClass('global');
+
+                  var varbl = $('<td></td>');
+                  varbl.addClass('var_name');
+                  varbl.html(name);
+                  var adcl = $('<td></td>');
+                  adcl.addClass('var_addr');
+                  adcl.html(addr);
+
+                  var_row.append(varbl);
+                  var_row.append(adcl);
+                  stack.append(var_row);
+               });
+            });
+         }
+
          function receiveAST(data) {
             $('#source').html(ipprint(data));
 
+            // TODO: error handling
             if (data["node"] !== "CTranslUnit") {
                $('#functions').html('error');
                return;
             }
+
+            $('#functions').empty();
 
             // create an li for each decl
             _(data["decls"])
@@ -51,14 +87,39 @@
                .map(function(fun) {
                $('#functions').append('<h3>' + unquotify(fun["name"]) + fun_args(fun) + '</h3><div class="context"><a href="#" data-function="' + unquotify(fun["name"]) + '">Run</a></div>');
             });
+
+
+            glState = compile(data);
+            glState.kont($('#whatsgoingon'));
+            updateMemory(glState);
+            var newstack = [{}];
+            glState.stack = newstack.concat(glState.stack);
             $('#functions').accordion();
-
-
-            env = evalAST(data);
-            console.log(env);
          }
 
+         function enlarge() { $('#source').addClass('enlarge'); }
+
+         var cidx = -1,
+             controlsLen = 0;
          $(document).ready(function() {
+            $('#step').click(function() {
+               if (_(glState.control).isArray()) {
+                  var controls = glState.control;
+                  if (cidx < 0) {
+                     cidx = 0;
+                     controlsLen = controls.length;
+                  }
+                  glState.control = controls[cidx];
+                  glState = step[glState.control["node"]](glState);
+                  glState.kont($('#whatsgoingon'));
+                  glState.control = controls;
+                  cidx++;
+               } else if (_(glState.control).isObject()) {
+                  glState = step[glState.control["node"]](glState);
+                  glState.kont($('#whatsgoingon'));
+               }
+               updateMemory(glState);
+            });
             $('#code').focus();
             $("#compile").click(function() {
                $('#functions').empty();
@@ -71,119 +132,7 @@
          });
       </script>
       <!--<link href="static/css/bootstrap.css" rel="stylesheet">-->
-      <style>
-         * { margin:0; padding: 0; }
-         body {
-            padding: 1em;
-         }
-
-         textarea{
-            width:400px;
-
-            /* The following three rules make a difference in the script */
-            overflow:hidden;
-            line-height: 13px;
-            font-size: 13px;
-
-
-            border:1px solid #999;
-            padding:10px;
-            font-family: monospace;
-            margin:0;
-            display:block;
-            outline:none;
-         }
-         textarea:focus{
-            border-color:#333;
-         }
-         .codecontainer{
-            position:relative;
-            display:inline-block;
-            margin-left: 2%;
-            float: left;
-         }
-         .line-nums{
-            font-size:13px;
-            line-height:13px;
-            padding:10px 4px;
-            font-family: monospace;
-            background: #EEE;
-            position: absolute;
-            width: 20px;
-            left: -28px;
-            bottom: 0;
-            top: 0;
-            text-align:right;
-         }
-
-         #topbar {
-            background-color:#126B00;
-         }
-
-         #toplinks {
-            list-style: none;
-            position: absolute;
-            right: 0;
-         }
-
-         #toplinks li a {
-            color: #fff;
-         }
-
-         #compile {
-            margin-bottom: .5em;
-         }
-
-         #code {
-            clear: both;
-            padding: .5em;
-            border: 0;
-            min-width: 700px;
-            min-height: 300px;
-         }
-
-         #controls {
-            position:absolute;
-            margin-left: 730px;
-            max-width: 450px;
-            width: 100%;
-         }
-
-         #steps {
-            text-align: center;
-            margin-bottom:1em;
-         }
-
-         #step {
-            width: 90%;
-         }
-
-         #functions {
-            margin-bottom: 1em;
-         }
-
-         #args {
-            position: absolute;
-            right: 0;
-            padding-right: 1em;
-            list-style: none;
-            display: inline;
-            font-size: 12px;
-         }
-
-         #args li {
-            display: inline;
-         }
-
-         .param {
-            width: 50px;
-         }
-
-         #memory-container {
-            width: 700px;
-            padding:1em;
-         }
-      </style>
+      <link rel="stylesheet" href="static/css/style.css">
    </head>
    <body>
       <div class="container">
@@ -209,7 +158,7 @@ int dup(int num) {
    return a;
 }
 
-int main(int argc, char **argv) {
+int main() {
    int num = 5;
    num = dup(num);
    printf("%d\n", num);
@@ -219,26 +168,30 @@ int main(int argc, char **argv) {
          </div>
          <div id="controls">
             <div id="steps">
-               <h3>Step</h3>
+               <a href="#" id="step">Step</a>
+               <div id="whatsgoingon"></div>
                <br>
                <input type="range" name="step" id="step" min="1" max="10" value="0">
             </div>
             <ul id="functions">
             </ul>
-            <div id="source">
-            </div>
          </div>
 
          <br style="clear: both;">
       </div>
+      <table id="stack">
+         <tr>
+            <th>Variable Name</th>
+            <th>Memory Location</th>
+         </tr>
+      </table>
       <div id="memory-container">
          <h2>Memory</h2>
          <ul id="memory">
-            <li class="entry">
-            <span class="loc">0:</span>
-            <span class="value">0xDEAD</span>
-            </li>
          </ul>
+      </div>
+      <br>
+      <div id="source">
       </div>
       <script type="text/javascript" src="static/js/behave.js"></script>
       <script type="text/javascript">

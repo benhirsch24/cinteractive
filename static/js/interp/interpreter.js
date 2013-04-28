@@ -10,17 +10,17 @@
  */
 
 // Monadic plumbing, essentially: forM nodes eval
-function sequenceEval(nodes, env) {
+function sequenceEval(nodes, state) {
    var vals = [];
    var ret;
 
    for (var i = 0; i < nodes.length; i++) {
-      ret = eval(nodes[i], env);
+      ret = eval(nodes[i], state);
       vals.push(ret.val);
-      env = ret.env;
+      state = ret.state;
    }
 
-   return {vals: vals, env: env};
+   return {vals: vals, state: state};
 };
 
 function initialValue(type) {
@@ -35,15 +35,29 @@ function initialValue(type) {
    return val;
 }
 
-function AddToEnv(name, value, env) {
-   env.stack[name] = env.next;
-   env.heap[env.next] = value;
-   env.next = env.next + 1;
-   return env;
+function AddGlobalToEnv(name, value, state) {
+   state.stack[0][name] = state.next;
+   state.heap[state.next] = value;
+   state.next = state.next + 1;
+   return state;
+}
+
+function AddToCurFrame(name, value, state) {
+   state.stack[1][name] = state.next;
+   state.heap[state.next] = value;
+   state.next = state.next + 1;
+   return state;
+}
+
+function evalLhs(lhs) {
+   if (lhs["node"] === "CVar") {
+      return unquotify(lhs["name"]);
+   }
+   return "";
 }
 
 // TODO: rest of specifiers
-function evalSpecifiers(specs, env) {
+function evalSpecifiers(specs, state) {
    var type = '';
 
    _(specs).map(function(s) {
@@ -64,108 +78,108 @@ function evalSpecifiers(specs, env) {
 }
 
 var compileDecl = {};
-compileDecl["CDecl"] = function(node, env) {
+compileDecl["CDecl"] = function(node, state) {
    var type = evalSpecifiers(node["specifiers"]);
 
    _(node["declarations"]).map(function(d) {
       var name = d['declarator']['name'];
-      env = AddToEnv(name, initialValue(type), env);
+      state = AddGlobalToEnv(name, initialValue(type), state);
    });
 
-   return env;
+   return state;
 };
 
-compileDecl["CFunDef"] = function(node, env) {
-   return AddToEnv(node["fun_def"]["name"], node, env);
+compileDecl["CFunDef"] = function(node, state) {
+   return AddGlobalToEnv(node["fun_def"]["name"], node, state);
 };
 
-function evalAST(ast) {
-   var env = {stack: {}, heap: {}, next: 0};
+function initEnv(ast) {
+   var state = {stack: [{}], heap: {}, next: 0};
    var decls = ast["decls"];
 
    _(decls).map(function(n) {
-      env = compileDecl[n["node"]](n, env);
+      state = compileDecl[n["node"]](n, state);
    });
 
-   return env;
+   return state;
 }
 
 evalNode = {};
-evalNode["CTranslUnit"] = function(node, env) {
+evalNode["CTranslUnit"] = function(node, state) {
    
 };
-evalNode["CFunDef"] = function(node, env) {
+evalNode["CFunDef"] = function(node, state) {
    
 };
 
-evalNode["CMulOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a * b, env: env};
+evalNode["CMulOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a * b, state: state};
    };
 };
-evalNode["CDivOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a / b, env: env};
+evalNode["CDivOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a / b, state: state};
    };
 };
-evalNode["CRmdOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a % b, env: env};
+evalNode["CRmdOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a % b, state: state};
    };
 };
-evalNode["CAndOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a && b, env: env};
+evalNode["CAndOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a && b, state: state};
    };
 };
-evalNode["COrOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a || b, env: env};
+evalNode["COrOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a || b, state: state};
    };
 };
-evalNode["CXorOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a ^ b, env: env};
+evalNode["CXorOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a ^ b, state: state};
    };
 };
-evalNode["CNeqOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a !== b, env: env};
+evalNode["CNeqOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a !== b, state: state};
    };
 };
-evalNode["CEqOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a === b, env: env};
+evalNode["CEqOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a === b, state: state};
    };
 };
-evalNode["CGeqOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a >= b, env: env};
+evalNode["CGeqOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a >= b, state: state};
    };
 };
-evalNode["CLeqOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a <= b, env: env};
+evalNode["CLeqOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a <= b, state: state};
    };
 };
-evalNode["CLeOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a < b, env: env};
+evalNode["CLeOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a < b, state: state};
    };
 };
-evalNode["CGrOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a > b, env: env};
+evalNode["CGrOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a > b, state: state};
    };
 };
-evalNode["CAddOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a + b, env: env};
+evalNode["CAddOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a + b, state: state};
    };
 };
-evalNode["CSubOp"] = function(node, env) {
-   return function(a, b, env) {
-      return {val: a -b, env: env};
+evalNode["CSubOp"] = function(node, state) {
+   return function(a, b, state) {
+      return {val: a -b, state: state};
    };
 };
 
@@ -173,14 +187,14 @@ evalNode["CSubOp"] = function(node, env) {
  * eval'ing Expressions
  * CExprs
  */
-evalNode["CVar"] = function(node, env) {
-   return {val: lookup(node["ident"], env), env: env};
+evalNode["CVar"] = function(node, state) {
+   return {val: lookup(node["ident"], state), state: state};
 };
-evalNode["CConst"] = function(node, env) {
-   return {val: eval(node["const"], env), env: env};
+evalNode["CConst"] = function(node, state) {
+   return eval(node["const"], state);
 };
-evalNode["CUnary"] = function(node, env) {
-   var val = eval(node["expr"], env);
+evalNode["CUnary"] = function(node, state) {
+   var val = eval(node["expr"], state);
    var ret;
 
    switch (node["op"]) {
@@ -189,10 +203,10 @@ evalNode["CUnary"] = function(node, env) {
          break;
    }
 
-   return {val: val.val, env: val.env};
+   return {val: val.val, state: val.state};
 };
-evalNode["CBinary"] = function(node, env) {
-   var vals = sequenceEval(["op", "erand1", "erand2"], env);
+evalNode["CBinary"] = function(node, state) {
+   var vals = sequenceEval(["op", "erand1", "erand2"], state);
    var fun = vals[0],
        erand1 = vals[1],
        erand2 = vals[2];
@@ -200,87 +214,91 @@ evalNode["CBinary"] = function(node, env) {
    if (typeof(fun) !== 'function')
       throw "Not a function";
 
-   return fun(erand1, erand2, env);
+   return fun(erand1, erand2, state);
 };
-evalNode["CCall"] = function(node, env) {
+evalNode["CCall"] = function(node, state) {
    var arg, fun,
        arg_vals = [];
 
    // fun is likely a CVar, meaning {"val": "function_name", "node": "CVar"}
-   fun = eval(node["function"], env);
-   env = fun.env;
+   fun = eval(node["function"], state);
+   state = fun.state;
 
-   for (var i = 0; i < env["args"].length; i++) {
-      arg = eval(env["args"][i], env);
+   for (var i = 0; i < state["args"].length; i++) {
+      arg = eval(state["args"][i], state);
       arg_vals.push(arg.val);
-      env = arg.env;
+      state = arg.state;
    }
 
-   return callFn(fun.val, arg_vals, env);
+   return callFn(fun.val, arg_vals, state);
 };
 //TODO not sure about handling vars on lhs vs associating them
-evalNode["CAssign"] = function(node, env) {
-   var lhs = eval(node["lhs"], env);
-   var rhs = eval(node["rhs"], lhs.env);
-   env = rhs.env;
+evalNode["CAssign"] = function(node, state) {
+   var lhs = evalLhs(node["lhs"], state);
+   var rhs = eval(node["rhs"], lhs.state);
+   state = rhs.state;
 
-   var op = assoc(lhs.val, doOp(node["op"], lookup(lhs.val, env), rhs, env));
+   var op = assoc(lhs.val, doOp(node["op"], lookup(lhs.val, state), rhs, state));
 };
 
 /**
  * eval'ing Statements
  * CStat
  */
-evalNode["CExpr"] = function(node, env) {
-   return eval(node["expr"], env);
+evalNode["CExpr"] = function(node, state) {
+   return eval(node["expr"], state);
 };
-evalNode["CWhile"] = function(node, env) {
-   var guard = eval(node["guard"], env);
+evalNode["CWhile"] = function(node, state) {
+   var guard = eval(node["guard"], state);
    var next;
 
    while (isTrue(guard.val)) {
-      next = eval(node["next"], guard.env);
-      guard = eval(node["guard"], next.env);
+      next = eval(node["next"], guard.state);
+      guard = eval(node["guard"], next.state);
    }
-   return {val: {}, env: guard.env};
+   return {val: {}, state: guard.state};
 };
-evalNode["CIf"] = function(node, env) {
-   var ret = eval(node["expr"], env);
+evalNode["CIf"] = function(node, state) {
+   var ret = eval(node["expr"], state);
 
    if (isTrue(ret.val))
-      return eval(node["true"], expr_ret.env);
+      return eval(node["true"], expr_ret.state);
    else
-      return eval(node["false"], expr_ret.env);
+      return eval(node["false"], expr_ret.state);
 };
-evalNode["CFor"] = function(node, env) {
-   var init = eval(node["init"], env);
-   var guard = eval(node["guard"], init.env);
+evalNode["CFor"] = function(node, state) {
+   var init = eval(node["init"], state);
+   var guard = eval(node["guard"], init.state);
    var stat;
 
    while (isTrue(guard.val)) {
-      stat = eval(node["next"], guard.env);
-      guard = eval(node["guard"], stat.env);
+      stat = eval(node["next"], guard.state);
+      guard = eval(node["guard"], stat.state);
    }
-   return {val: {}, env: guard.env};
+   return {val: {}, state: guard.state};
 };
-evalNode["CReturn"] = function(node, env) {
-   return eval(node["expr"], env);
+evalNode["CReturn"] = function(node, state) {
+   return eval(node["expr"], state);
+};
+
+evalNode["CInit"] = function(node, state) {
+   return eval(node["assignment"], state);
 };
 
 /**
  * Values
  */
-evalNode["CCharConst"] = evalNode["CFloatConst"] = evalNode["CStrConst"] = evalNode["CIntConst"] = function(node, env) {
-   // we know val is a CInteger, doesn't change env
-   return eval(node["val"], env);
+evalNode["CCharConst"] = evalNode["CFloatConst"] = evalNode["CStrConst"] = evalNode["CIntConst"] = function(node, state) {
+   // we know val is a CInteger, doesn't change state
+   return eval(node["val"], state);
 };
-evalNode["CStr"] = function(node, env) {
-   return {val: node["string"], env: env};
+evalNode["CStr"] = function(node, state) {
+   return {val: node["string"], state: state};
 };
-evalNode["CStrLit"] = function(node, env) {
-   return {val: node["string"], env: env};
+evalNode["CStrLit"] = function(node, state) {
+   return {val: node["string"], state: state};
 };
-evalNode["CInteger"] = function(node, env) {
+evalNode["CInteger"] = function(node, state) {
    var radix;
    switch (node["base"]) {
       case "d":
@@ -293,20 +311,20 @@ evalNode["CInteger"] = function(node, env) {
          radix = 16;
          break;
    }
-   return {val: parseInt(node["int"], radix), env: env};
+   return {val: parseInt(node["int"], radix), state: state};
 };
-evalNode["CChar"] = function(node, env) {
-   return {val: node["char"], env: env};
+evalNode["CChar"] = function(node, state) {
+   return {val: node["char"], state: state};
 };
-evalNode["CChars"] = function(node, env) {
-   return {val: node["chars"], env: env};
+evalNode["CChars"] = function(node, state) {
+   return {val: node["chars"], state: state};
 };
-evalNode["CFloat"] = function(node, env) {
-   return {val: parseFloat(node["float"]), env: env};
+evalNode["CFloat"] = function(node, state) {
+   return {val: parseFloat(node["float"]), state: state};
 };
 
-function eval(node, env) {
-   return evalNode[node["node"], env];
+function eval(node, state) {
+   return evalNode[node["node"]](node, state);
 }
 
 

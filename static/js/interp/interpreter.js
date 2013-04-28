@@ -188,7 +188,7 @@ evalNode["CSubOp"] = function(node, state) {
  * CExprs
  */
 evalNode["CVar"] = function(node, state) {
-   return {val: lookup(node["ident"], state), state: state};
+   return {val: node["ident"], state: state};
 };
 evalNode["CConst"] = function(node, state) {
    return eval(node["const"], state);
@@ -234,11 +234,31 @@ evalNode["CCall"] = function(node, state) {
 };
 //TODO not sure about handling vars on lhs vs associating them
 evalNode["CAssign"] = function(node, state) {
-   var lhs = evalLhs(node["lhs"], state);
-   var rhs = eval(node["rhs"], lhs.state);
-   state = rhs.state;
+   var vals = sequenceEval([ node["lvalue"], node["rvalue"] ], state);
+   var name = vals.val[0];
+   var rhs = vals.val[1];
+   state = vals.state;
+   
+   // Switch on assign ops
+   var ops = {};
+   ops["CAssignOp"] = function(lhs, rhs) {
+      return rhs;
+   };
+   ops["CMulAssOp"] = function(l, r) { return l * r; }
+   ops["CDivAssOp"] = function(l, r) { return l / r; }
+   ops["CRemAssOp"] = function(l,r) { return l % r; };
+   ops["CAddAssOp"] = function(l,r) { return l + r; };
+   ops["CSubAssOp"] = function(l,r) { return l - r; };
+   ops["CShlAssOp"] = function(l,r) { return l * 2 * r; };
+   ops["CShrAssOp"] = function(l,r) { return l / 2 * r; };
+   ops["CAndAssOp"] = function(l,r) { return l & r; };
+   ops["COrAssOp"] = function(l,r) { return l | r; };
+   ops["CXorAssOp"] = function(l,r) { return l ^ r; };
 
-   var op = assoc(lhs.val, doOp(node["op"], lookup(lhs.val, state), rhs, state));
+   var op = ops[node["ops"]];
+   var val = op(state.heap[name], rhs);
+   state.heap[name] = val;
+   return {val: val, state: state};
 };
 
 /**

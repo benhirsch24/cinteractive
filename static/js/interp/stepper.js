@@ -86,23 +86,9 @@ step["CDecl"] = function(state) {
    return state;
 };
 step["CExpr"] = function(state) {
-   var expr = state.control["expr"];
-   switch(expr) {
-      case "CAssign":
-         var lhs = evalLhs(expr["lvalue"], state);
-         var rhs = evalNode(expr["rvalue"], lhs.state);
-         state.heap = rhs.heap;
-         state.heap[lhs.val] = rhs;
-         state.kont = function(ui) {
-            ui.html('Assigned location: ' + lhs + ' to ' + rhs);
-         };
-         break;
-      default:
-         state.kont = function(ui) {
-            ui.html('Weird, no expr');
-         };
-   }
-   return state;
+   var expr = state.control["expr"],
+       value = eval(state.control, state);
+   return 
 };
 step["CCall"] = function(state) {
    var newstack = sequenceEval(state.control["args"], state);
@@ -120,6 +106,8 @@ step["CCompound"] = function(state) {
    };
    return state;
 }
+
+
 
 function initial_value(type) {
    var val = 0;

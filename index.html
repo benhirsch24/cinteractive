@@ -94,6 +94,8 @@
             updateMemory(glState);
             var newstack = [{}];
             glState.stack = newstack.concat(glState.stack);
+            cidx = -1;
+            controlsLen = 0;
             $('#functions').accordion();
          }
 
@@ -103,23 +105,31 @@
              controlsLen = 0;
          $(document).ready(function() {
             $('#step').click(function() {
+               console.log("Stepping");
+               console.log(glState);
+
                if (_(glState.control).isArray()) {
-                  var controls = glState.control;
+                  var controls = _(glState.control).clone();
                   if (cidx < 0) {
                      cidx = 0;
                      controlsLen = controls.length;
+                  } else if (cidx == controlsLen) {
+                     console.log("Popped up out of array list what happens now? And how did it happen?");
+                     console.log(glState);
                   }
                   glState.control = controls[cidx];
+                  console.log(glState.control);
                   glState = step[glState.control["node"]](glState);
                   glState.kont($('#whatsgoingon'));
                   glState.control = controls;
                   cidx++;
+                  if (cidx == controlsLen)
+                     cidx = -1;
                } else if (_(glState.control).isObject()) {
                   glState = step[glState.control["node"]](glState);
                   glState.kont($('#whatsgoingon'));
                }
                updateMemory(glState);
-               console.log(glState);
             });
             $('#code').focus();
             $("#compile").click(function() {
@@ -160,8 +170,15 @@ int dup(int num) {
 }
 
 int main() {
-   int num = 5;
-   num = dup(num);
+   int num;
+   num = 5;
+   if (0) {
+      num = dup(num);
+   } else {
+      num = 3;
+      num += 1;
+   }
+
    printf("%d\n", num);
 
    return 0;

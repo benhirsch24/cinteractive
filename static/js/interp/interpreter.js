@@ -188,7 +188,7 @@ evalNode["CSubOp"] = function(node, state) {
  * CExprs
  */
 evalNode["CVar"] = function(node, state) {
-   return {val: node["ident"], state: state};
+   return {val: unquotify(node["name"]), state: state};
 };
 evalNode["CConst"] = function(node, state) {
    return eval(node["const"], state);
@@ -218,14 +218,29 @@ evalNode["CBinary"] = function(node, state) {
 };
 evalNode["CCall"] = function(node, state) {
    var arg, fun,
-       arg_vals = [];
+       arg_vals = [],
+       fun_name = node["function"]["name"];
+   var fun_addr;
+
+   console.log(fun_name);
+   if (!(_(state.stack[fun_name]).isUndefined()))
+      fun_addr = state.stack[0][fun_name];
+   else if (!(_(_(state.stack).last()[fun_name]).isUndefined()))
+      fun_addr = _(state.stack).last()[fun_name];
+   else {
+      console.log("No function defined");
+      state.kont = function(ui) {
+         ui.html("Error in CCall");
+      }
+      return {val: undefined, state: state};
+   }
 
    // fun is likely a CVar, meaning {"val": "function_name", "node": "CVar"}
-   fun = eval(node["function"], state);
+   fun = eval(unquotify(state.heap[fun_name]), state);
    state = fun.state;
 
-   for (var i = 0; i < state["args"].length; i++) {
-      arg = eval(state["args"][i], state);
+   for (var i = 0; i < node["args"].length; i++) {
+      arg = eval(node["args"][i], state);
       arg_vals.push(arg.val);
       state = arg.state;
    }
@@ -241,9 +256,7 @@ evalNode["CAssign"] = function(node, state) {
    
    // Switch on assign ops
    var ops = {};
-   ops["CAssignOp"] = function(lhs, rhs) {
-      return rhs;
-   };
+   ops["CAssignOp"] = function(l, r) { return r; };
    ops["CMulAssOp"] = function(l, r) { return l * r; }
    ops["CDivAssOp"] = function(l, r) { return l / r; }
    ops["CRemAssOp"] = function(l,r) { return l % r; };
@@ -344,6 +357,7 @@ evalNode["CFloat"] = function(node, state) {
 };
 
 function eval(node, state) {
+   console.log(node["node"]);
    return evalNode[node["node"]](node, state);
 }
 

@@ -63,7 +63,7 @@ step["CDecl"] = function(state) {
 
    _(state.control["declarations"]).map(function (decl) {
       var val;
-      if (_(decl).has('initializer')) {
+      if (_(decl).has('initializer') && decl['initializer'] !== null) {
          val = eval(decl['initializer'], state);
          state = val.state;
          val = val.val;
@@ -86,9 +86,22 @@ step["CDecl"] = function(state) {
    return state;
 };
 step["CExpr"] = function(state) {
-   var expr = state.control["expr"],
-       value = eval(state.control, state);
-   return 
+   state.control = state.control["expr"]
+   console.log("Nevermind, stepping to " + state.control["node"])
+   return step[state.control["node"]](state);
+};
+step["CAssign"] = function(state) {
+   console.log(state.control);
+   var lvalue = eval(state.control["lvalue"], state);
+   console.log("rvalue");
+   var rvalue = eval(state.control["rvalue"], lvalue.state);
+   state = rvalue.state;
+
+   state.heap[state.stack[0][lvalue.val]] = rvalue.val;
+   state.kont = function(ui) {
+      ui.html('Changed var ' + lvalue.val + ' to ' + rvalue.val);
+   };
+   return state;
 };
 step["CCall"] = function(state) {
    var newstack = sequenceEval(state.control["args"], state);
@@ -107,6 +120,25 @@ step["CCompound"] = function(state) {
    return state;
 }
 
+step["CIf"] = function(state) {
+   var guard = eval(state.control["guard"], state);
+   state = guard.state;
+   var happ = '';
+
+   if (guard.val === 0) {
+      state.control = state.control["false"];
+      happ = 'Condition was false.';
+   } else {
+      state.control = state.control["true"];
+      happ = 'Condition was true.';
+   }
+
+   state.kont = function(ui) {
+      ui.html(happ);
+   };
+
+   return state;
+};
 
 
 function initial_value(type) {

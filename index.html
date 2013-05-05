@@ -79,7 +79,7 @@
 
             $('#functions').empty();
 
-            // create an li for each decl
+            // create an li for each function decl
             _(data["decls"])
                .filter(function(node) {
                   if (node["node"] === "CFunDef") return true; else return false;})
@@ -88,49 +88,99 @@
                $('#functions').append('<h3>' + unquotify(fun["name"]) + fun_args(fun) + '</h3><div class="context"><a href="#" data-function="' + unquotify(fun["name"]) + '">Run</a></div>');
             });
 
-
             glState = compile(data);
             glState.kont($('#whatsgoingon'));
             updateMemory(glState);
             var newstack = [{}];
             glState.stack = newstack.concat(glState.stack);
-            cidx = -1;
-            controlsLen = 0;
             $('#functions').accordion();
          }
 
          function enlarge() { $('#source').addClass('enlarge'); }
 
-         var cidx = -1,
-             controlsLen = 0;
-         $(document).ready(function() {
-            $('#step').click(function() {
-               console.log("Stepping");
-               console.log(glState);
+         /**
+         * type InstructionPointer = Int
+         * Context :: Context [Expr] InstructionPointer
+         * Dump :: [Context]
+         * 
+         * Use: Any array construct (ie C block) in state.control is added to the dump. The IP 
+         * is the current index used to pop up out of the end of a block
+         */
 
+         var dump = [];
+         var onDump = false;
+         
+         function uiStep() {
+            if (_(glState.dump).isEmpty()) {
+               if (!_(glState.control).isUndefined()) {
+                  console.log("Dump is empty, use state.control");
+               }
+               else {
+                  $('#whatsgoingon').html('Done!');
+                  return;
+               }
+               // don't do anything?
+            } else {
+               if (!glState.dump.isEmpty() && _(glState.dump).last().length === 0) {
+                  _(glState.dump).pop();
+               }
+               if (glState.dump.isEmpty()) {
+                  $('#whatsgoingon').html('Done!');
+                  return;
+               }
+               glState.control = _(glState.dump).last().shift();
+            }
+
+            glState = step[glState.control["node"]](glState);
+            updateMemory(glState);
+            glState.kont($('#whatsgoingon'));
+         };
+
+         /*function uiStep() {
+            console.log("Stepping");
+            console.log(_(glState).clone());
+
+            if (onDump) {
+               glState.control = _(dump).last().shift();
+               if (_(dump).last().length === 0)
+                  dump.pop();
+
+               glState = step[glState.control["node"]](glState);
+               if(glState.control && !_(glState.control).isArray()) {
+                  dump.push([glState.control]);
+                  console.log("NO");
+               }
+            } else {
                if (_(glState.control).isArray()) {
-                  var controls = _(glState.control).clone();
-                  if (cidx < 0) {
-                     cidx = 0;
-                     controlsLen = controls.length;
-                  } else if (cidx == controlsLen) {
-                     console.log("Popped up out of array list what happens now? And how did it happen?");
-                     console.log(glState);
-                  }
-                  glState.control = controls[cidx];
-                  console.log(glState.control);
+                  var stmts = _(glState.control).clone();
+                  glState.control = stmts.shift();
+                  dump.push(stmts);
                   glState = step[glState.control["node"]](glState);
-                  glState.kont($('#whatsgoingon'));
-                  glState.control = controls;
-                  cidx++;
-                  if (cidx == controlsLen)
-                     cidx = -1;
+                  if(glState.control) {
+                     dump.push([glState.control]);
+                  }
+                  onDump = true;
                } else if (_(glState.control).isObject()) {
                   glState = step[glState.control["node"]](glState);
-                  glState.kont($('#whatsgoingon'));
                }
-               updateMemory(glState);
-            });
+            }
+
+            if (_(glState.control).isArray()) {
+               var stmts = _(glState.control).clone();
+               glState.control = stmts.shift();
+               console.log("ps");
+               console.log(stmts);
+               dump.push(stmts);
+               onDump = true;
+            }
+
+            glState.kont($('#whatsgoingon'));
+            updateMemory(glState);
+            console.log(dump);
+         }; */
+
+         $(document).ready(function() {
+            $('#step').click(uiStep);
             $('#code').focus();
             $("#compile").click(function() {
                $('#functions').empty();
@@ -160,26 +210,21 @@
 <textarea id="code">
 unsigned int global_var, global_twar = 3;
 
-int dup(int num) {
-   int i;
-   int a;
-   for (i = 0; i &lt; num; i++)
-      a = num + 1;
-
-   return a;
+int dup(int n) {
+   n = n + n;
+   return n;
 }
 
 int main() {
    int num;
    num = 5;
-   if (0) {
+   if (1) {
       num = dup(num);
    } else {
       num = 3;
       num += 1;
    }
 
-   printf("%d\n", num);
 
    return 0;
 }</textarea>

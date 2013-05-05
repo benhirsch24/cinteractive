@@ -23,6 +23,18 @@ function sequenceEval(nodes, state) {
    return {vals: vals, state: state};
 };
 
+function varLookup(varname, stack) {
+   var locals = stack[0],
+       globals = _(stack).last();
+
+   if (!_(locals[varname]).isUndefined())
+      return locals[varname];
+   else if (!_(globals[varname]).isUndefined())
+      return globals[varname];
+   else
+      return undefined;
+};
+
 function initialValue(type) {
    var val = 0;
 
@@ -109,7 +121,7 @@ evalNode["CTranslUnit"] = function(node, state) {
    
 };
 evalNode["CFunDef"] = function(node, state) {
-   
+   return {val: node, state: state};
 };
 
 evalNode["CMulOp"] = function(node, state) {
@@ -206,28 +218,49 @@ evalNode["CUnary"] = function(node, state) {
    return {val: val.val, state: val.state};
 };
 evalNode["CBinary"] = function(node, state) {
-   var vals = sequenceEval(["op", "erand1", "erand2"], state);
-   var fun = vals[0],
-       erand1 = vals[1],
-       erand2 = vals[2];
+   var erand1 = eval(node["erand1"], state),
+       erand2 = eval(node["erand2"], erand1.state);
+   state = erand2.state;
 
-   if (typeof(fun) !== 'function')
-      throw "Not a function";
+   if (_(erand1.val).isString())
+      erand1.val = state.heap[varLookup(erand1.val, state.stack)];
+   if (_(erand2.val).isString())
+      erand2.val = state.heap[varLookup(erand2.val, state.stack)];
 
-   return fun(erand1, erand2, state);
+   var ops = {};
+   ops["CMulOp"] = function(l, r) { return l * r; }
+   ops["CDivOp"] = function(l, r) { return l / r; }
+   ops["CRmdOp"] = function(l,r) { return l % r; };
+   ops["CAddOp"] = function(l,r) { return l + r; };
+   ops["CSubOp"] = function(l,r) { return l - r; };
+   ops["CShlOp"] = function(l,r) { return l * 2 * r; };
+   ops["CShrOp"] = function(l,r) { return l / 2 * r; };
+   ops["CAndOp"] = function(l,r) { return l & r; };
+   ops["COrAssOp"] = function(l,r) { return l | r; };
+   ops["CXorAssOp"] = function(l,r) { return l ^ r; };
+   ops["CLndOp"] = function(l,r) { return l && r; };
+   ops["CLorOp"] = function(l,r) { return l || r; };
+   ops["CLeOp"] = function(l,r) { return l < r; };
+   ops["CGrOp"] = function(l,r) { return l > r; };
+   ops["CLeqOp"] = function(l,r) { return l <= r; };
+   ops["CGeqOp"] = function(l,r) { return l >= r; };
+   ops["CEqOp"] = function(l,r) { return l === r; };
+   ops["CNeqOp"] = function(l,r) { return l !== r; };
+
+   var val = ops[node["op"]](erand1.val, erand2.val);
+
+   return {val: val, state: erand2.state};
 };
 evalNode["CCall"] = function(node, state) {
    var arg, fun,
        arg_vals = [],
-       fun_name = node["function"]["name"];
+       fun_name = unquotify(node["function"]["name"]);
    var fun_addr;
 
-   console.log(fun_name);
-   if (!(_(state.stack[fun_name]).isUndefined()))
-      fun_addr = state.stack[0][fun_name];
-   else if (!(_(_(state.stack).last()[fun_name]).isUndefined()))
-      fun_addr = _(state.stack).last()[fun_name];
-   else {
+   console.log("Calling " + fun_name);
+   // functions should be defined in globals which is last stack frame
+   fun_addr = _(state.stack).last()[fun_name];
+   if (_(fun_addr).isUndefined()) {
       console.log("No function defined");
       state.kont = function(ui) {
          ui.html("Error in CCall");
@@ -236,16 +269,36 @@ evalNode["CCall"] = function(node, state) {
    }
 
    // fun is likely a CVar, meaning {"val": "function_name", "node": "CVar"}
-   fun = eval(unquotify(state.heap[fun_name]), state);
+   fun = eval(state.heap[fun_addr], state);
    state = fun.state;
 
+   var evalArgument = function(arg, state) {
+      var argval = undefined;
+      if (arg["node"] === "CVar") {
+         argval = eval(arg, state);
+         var varname = argval.val;
+         var addr = varLookup(varname, state.stack);
+         argval.val = state.heap[addr];
+      } else if (arg["node"] === "CConst") {
+         argval = eval(arg["node"], state);
+      }
+      return argval;
+   };
+
    for (var i = 0; i < node["args"].length; i++) {
-      arg = eval(node["args"][i], state);
+      arg = evalArgument(node["args"][i], state);
       arg_vals.push(arg.val);
       state = arg.state;
+      state.heap[state.next] = arg.val;
+      state.next += 1;
    }
 
-   return callFn(fun.val, arg_vals, state);
+   _(state.stack).unshift({});
+   state.control = fun.val;
+   state.kont = function(ui) {
+      ui.html('About to call ' + fun_name);
+   };
+   return {val: fun.val, state: state};
 };
 //TODO not sure about handling vars on lhs vs associating them
 evalNode["CAssign"] = function(node, state) {

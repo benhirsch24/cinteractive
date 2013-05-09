@@ -47,7 +47,7 @@ instance ToJSON CStat where
    toJSON (CCases expr1 expr2 stat _) = object ["node" .= pack "CCases", "expr1" .= toJSON expr1, "expr2" .= toJSON expr2, "next" .= toJSON stat]
    toJSON (CDefault stat _) = object ["node" .= pack "CDefault", "next" .= toJSON stat]
    toJSON (CExpr expr _) = object ["node" .= pack "CExpr", "expr" .= toJSON expr]
-   toJSON (CCompound labels items _) = object ["node" .= pack "CCompound", "labels" .= map (pack . show) idents, "block_items" .= map toJSON items]
+   toJSON (CCompound labels items _) = object ["node" .= pack "CCompound", "labels" .= map (pack . show) labels, "block_items" .= map toJSON items]
    toJSON (CIf expr stif stelse _) = object ["node" .= pack "CIf", "guard" .= toJSON expr, "true" .= toJSON stif, "false" .= toJSON stelse]
    toJSON (CSwitch expr stat _) = object ["node" .= pack "CSwitch", "expr" .= toJSON expr, "next" .= toJSON stat]
    toJSON (CWhile guard stat dowhile _) = object ["node" .= pack "CWhile", "guard" .= toJSON guard, "next" .= toJSON stat]

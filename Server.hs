@@ -59,6 +59,7 @@ app req =
                                   ext         = last . splitOn "." $ last rest
                                   contentType = resolveContentType ext
                               in  return $ fileResponse [(hContentType, contentType)] filepath
+      ["alternate.html"] -> return $ htmlFileResponse "alternate.html"
       _ -> return $ htmlFileResponse "index.html"
 
 parse :: Sink BU.ByteString (ResourceT IO) Response

@@ -207,9 +207,11 @@ step["CReturn"] = function(state) {
       ret.val = state.heap[varLookup(ret.val, state.stack)];
 
    state = ret.state;
+
    _(state.stack[0]).forIn(function(addr, name) {
-      delete state.heap[name];
+      delete state.heap[addr];
    });
+
    _(state.stack).shift();
    state.kont = function(ui) {
       ui.html('Returning val: ' + ret.val);

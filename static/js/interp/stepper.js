@@ -23,6 +23,8 @@ function compile(ast) {
            ui.html('Main on the stack');
         }
       , next: state.next
+      , dump: []
+      , ret: undefined
    };
 }
 
@@ -30,11 +32,11 @@ function push_params(state) {
    var top_addr = state.next - 1;
 
    // chain on the params of the function
-   // for each CDecl, find the specifiers (type) and if there's multiple decls
+   // for each CDecl, find the type specifiers and if there's multiple decls
    //   ie int a,b,c;
-   // then flatten all these down and reverse them
+   // then flatten all these down and reverse them (first arg should be first on stack)
    // finally on each decl name add it to the stack starting from the top address down
-   // since the CCall pushed the args into a new stack frame already
+   // since the CCall pushed the args into a new stack frame on the heap already
    _(state.control["fun_def"]["attrs"][0]["params"]).map(function(p) {
       var type = evalSpecifiers(p["specifiers"], state);
       var decls = _(p.declarations).map(function(decl) {
@@ -48,13 +50,26 @@ function push_params(state) {
 }
 
 var step = {};
+step["CThunk"] = function(state) {
+   var node = state.control["eval"];
+   node["thunk"] = state.control["thunk"];
+   node[state.control["thunk"]] = {val: state.ret, state: state};
+   state.kont = function(ui) {
+      ui.html('Executing thunk, filling hole ' + node["thunk"]);
+   };
+   state.ret = undefined;
+   state.control = undefined;
+   _(state.dump).last().unshift(node);
+   return state;
+};
 step["CFunDef"] = function(state) {
    var name = state.control['fun_def']['name'];
    stack = push_params(state);
    state.kont = function(ui) {
-      ui.html('Defining Function: ' + unquotify(name));
+      ui.html('Calling Function: ' + unquotify(name));
    };
-   state.control = state.control["statements"];
+   state.dump = _(state.dump).push(_(state.control["statements"]["block_items"]).clone());
+   state.control = undefined;
    return state;
 }
 step["CDecl"] = function(state) {
@@ -79,6 +94,7 @@ step["CDecl"] = function(state) {
       state.next += 1;
    });
 
+   state.control = undefined;
    state.kont = function(ui) {
       ui.html('Declared: ' + names);
    };
@@ -87,19 +103,61 @@ step["CDecl"] = function(state) {
 };
 step["CExpr"] = function(state) {
    state.control = state.control["expr"]
-   console.log("Nevermind, stepping to " + state.control["node"])
    return step[state.control["node"]](state);
 };
 step["CAssign"] = function(state) {
-   console.log(state.control);
+   var control = _(state.control).clone();
    var lvalue = eval(state.control["lvalue"], state);
-   console.log("rvalue");
-   var rvalue = eval(state.control["rvalue"], lvalue.state);
+
+   if (_(state.control["thunk"]).isUndefined()) {
+      var rvalue = eval(state.control["rvalue"], lvalue.state);
+   } else {
+      rvalue = state.control["rvalue"];
+      rvalue.state = lvalue.state;
+   }
    state = rvalue.state;
 
-   state.heap[state.stack[0][lvalue.val]] = rvalue.val;
+   // if the rvalue is a function (ie var = functionCall()) then put a thunk
+   // where this node was on the dump
+   console.log("rvalue");
+   console.log(rvalue.val);
+   if (_(rvalue.val).isObject() && rvalue.val["node"] === "CFunDef") {
+      var newNode = {};
+      newNode["node"] = "CThunk";
+      newNode["eval"] = control;
+      newNode["thunk"] = "rvalue";
+      newNode["rvalue"] = {};
+      _(state.dump).last().unshift(newNode);
+      _(state.dump).push([rvalue.val]);
+      state.kont = function(ui) {
+         ui.html('Created thunk on assign');
+      }
+      console.log("Created thunk");
+      console.log(_(state).clone());
+      return state;
+   }
+
+   // Switch on assign ops
+   var ops = {};
+   ops["CAssignOp"] = function(l, r) { return r; };
+   ops["CMulAssOp"] = function(l, r) { return l * r; }
+   ops["CDivAssOp"] = function(l, r) { return l / r; }
+   ops["CRemAssOp"] = function(l,r) { return l % r; };
+   ops["CAddAssOp"] = function(l,r) { return l + r; };
+   ops["CSubAssOp"] = function(l,r) { return l - r; };
+   ops["CShlAssOp"] = function(l,r) { return l * 2 * r; };
+   ops["CShrAssOp"] = function(l,r) { return l / 2 * r; };
+   ops["CAndAssOp"] = function(l,r) { return l & r; };
+   ops["COrAssOp"] = function(l,r) { return l | r; };
+   ops["CXorAssOp"] = function(l,r) { return l ^ r; };
+
+   var op = ops[state.control["op"]];
+   var val = op(state.heap[state.stack[0][lvalue.val]], rvalue.val);
+
+   state.control = undefined;
+   state.heap[state.stack[0][lvalue.val]] = val;
    state.kont = function(ui) {
-      ui.html('Changed var ' + lvalue.val + ' to ' + rvalue.val);
+      ui.html('Changed var ' + lvalue.val + ' to ' + val);
    };
    return state;
 };
@@ -113,10 +171,11 @@ step["CCall"] = function(state) {
 }
 step["CCompound"] = function(state) {
    // idents?
-   state.control = state.control["block_items"];
+   state.dump = _(state.dump).push(state.control["block_items"]);
    state.kont = function(ui) {
       ui.html('Compound statements');
    };
+   state.control = undefined;
    return state;
 }
 
@@ -126,17 +185,40 @@ step["CIf"] = function(state) {
    var happ = '';
 
    if (guard.val === 0) {
-      state.control = state.control["false"];
+      _(state.dump).last().unshift(state.control["false"]);
       happ = 'Condition was false.';
    } else {
-      state.control = state.control["true"];
+      _(state.dump).last().unshift(state.control["true"]);
       happ = 'Condition was true.';
    }
 
    state.kont = function(ui) {
       ui.html(happ);
    };
+   state.control = undefined;
 
+   return state;
+};
+
+step["CReturn"] = function(state) {
+   var ret = eval(state.control, state);
+
+   if (_(ret.val).isString())
+      ret.val = state.heap[varLookup(ret.val, state.stack)];
+
+   state = ret.state;
+
+   _(state.stack[0]).forIn(function(addr, name) {
+      delete state.heap[addr];
+   });
+
+   _(state.stack).shift();
+   state.kont = function(ui) {
+      ui.html('Returning val: ' + ret.val);
+   };
+   state.ret = ret.val;
+   state.control = undefined;
+   state.dump.pop();
    return state;
 };
 

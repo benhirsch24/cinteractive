@@ -10,127 +10,18 @@
       <script type="text/javascript" src="static/js/interp/prettyprint.js"></script>
       <script type="text/javascript" src="static/js/interp/interpreter.js"></script>
       <script type="text/javascript" src="static/js/interp/stepper.js"></script>
+      <script type="text/javascript" src="static/js/codemirror.js"></script>
+      <!--<link href="static/css/bootstrap.css" rel="stylesheet">-->
+      <link rel="stylesheet" href="static/css/style.css">
+      <link rel="stylesheet" href="static/css/codemirror.css">
+      <script src="static/js/clike/clike.js"></script>
+      <script src="static/js/interp/driver.js"></script>
       <!-- TODO: really should learn a module system or something for the javascript -->
       <script>
-         // THIS IS THE STATE OF THE INTERPRETER
-         var glState;
-
-         function fun_args(fun) {
-            var ret = '<div id="args">';
-               ret += '<ul class="args">';
-                  _(fun["attrs"][0]["params"]).map(function(p) {
-                     ret += '<li class="arg">';
-                     ret += print_type(p["specifiers"][0]["spec"]["node"]);
-                     ret += "&nbsp;&nbsp;&nbsp;";
-                     ret += "<input type='text' class='param' value='";
-                     ret += unquotify(p["declarations"][0]['declarator']["name"]);
-                     ret += "'>";
-                     ret += '</li>';
-                  });
-                  ret += '</ul>';
-               ret += '</div>';
-            return ret;
-         }
-
-         function updateMemory(st) {
-            var mem = $('#memory');
-            mem.empty();
-
-            var stack = $('#stack');
-            $('#stack .var_row').remove();
-
-            _(st.heap).forIn(function(value, loc) {
-               var li = $('<li></li>');
-               li.addClass('mem');
-               li.html('<span class="loc">' + loc + '</span>' + '<span class="value">' + ppMemValue(value) + '</span>');
-               mem.append(li);
-            });
-
-            var num_frames = st.stack.length;
-            _(st.stack).map(function(frame, frameIdx){
-               _(frame).forIn(function(addr, name) {
-                  var var_row = $('<tr></tr>');
-                  var_row.addClass('var_row');
-                  if (frameIdx === num_frames - 1)
-                     var_row.addClass('global');
-
-                  var varbl = $('<td></td>');
-                  varbl.addClass('var_name');
-                  varbl.html(name);
-                  var adcl = $('<td></td>');
-                  adcl.addClass('var_addr');
-                  adcl.html(addr);
-
-                  var_row.append(varbl);
-                  var_row.append(adcl);
-                  stack.append(var_row);
-               });
-            });
-         }
-
-         function receiveAST(data) {
-            $('#source').html(ipprint(data));
-
-            // TODO: error handling
-            if (data["node"] !== "CTranslUnit") {
-               $('#functions').html('error');
-               return;
-            }
-
-            $('#functions').empty();
-
-            // create an li for each decl
-            _(data["decls"])
-               .filter(function(node) {
-                  if (node["node"] === "CFunDef") return true; else return false;})
-               .map('fun_def')
-               .map(function(fun) {
-               $('#functions').append('<h3>' + unquotify(fun["name"]) + fun_args(fun) + '</h3><div class="context"><a href="#" data-function="' + unquotify(fun["name"]) + '">Run</a></div>');
-            });
-
-
-            glState = compile(data);
-            glState.kont($('#whatsgoingon'));
-            updateMemory(glState);
-            var newstack = [{}];
-            glState.stack = newstack.concat(glState.stack);
-            cidx = -1;
-            controlsLen = 0;
-            $('#functions').accordion();
-         }
-
-         function enlarge() { $('#source').addClass('enlarge'); }
-
-         var cidx = -1,
-             controlsLen = 0;
          $(document).ready(function() {
-            $('#step').click(function() {
-               console.log("Stepping");
-               console.log(glState);
-
-               if (_(glState.control).isArray()) {
-                  var controls = _(glState.control).clone();
-                  if (cidx < 0) {
-                     cidx = 0;
-                     controlsLen = controls.length;
-                  } else if (cidx == controlsLen) {
-                     console.log("Popped up out of array list what happens now? And how did it happen?");
-                     console.log(glState);
-                  }
-                  glState.control = controls[cidx];
-                  console.log(glState.control);
-                  glState = step[glState.control["node"]](glState);
-                  glState.kont($('#whatsgoingon'));
-                  glState.control = controls;
-                  cidx++;
-                  if (cidx == controlsLen)
-                     cidx = -1;
-               } else if (_(glState.control).isObject()) {
-                  glState = step[glState.control["node"]](glState);
-                  glState.kont($('#whatsgoingon'));
-               }
-               updateMemory(glState);
-            });
+            var myCodeMirror = CodeMirror.fromTextArea(document.getElementById("code"));
+            $('#step').click(uiStep);
+            $('#collectsteps').click(collectSteps);
             $('#code').focus();
             $("#compile").click(function() {
                $('#functions').empty();
@@ -142,8 +33,6 @@
             });
          });
       </script>
-      <!--<link href="static/css/bootstrap.css" rel="stylesheet">-->
-      <link rel="stylesheet" href="static/css/style.css">
    </head>
    <body>
       <div class="container">
@@ -160,36 +49,33 @@
 <textarea id="code">
 unsigned int global_var, global_twar = 3;
 
-int dup(int num) {
-   int i;
-   int a;
-   for (i = 0; i &lt; num; i++)
-      a = num + 1;
-
-   return a;
+int dup(int n) {
+   n = n + n;
+   return n;
 }
 
 int main() {
    int num;
    num = 5;
-   if (0) {
+   if (1) {
       num = dup(num);
    } else {
       num = 3;
       num += 1;
    }
 
-   printf("%d\n", num);
 
    return 0;
 }</textarea>
          </div>
          <div id="controls">
             <div id="steps">
+               <div id="steps_collected"></div>
                <a href="#" id="step">Step</a>
+               <a href="#" id="collectsteps">Collect Steps</a>
                <div id="whatsgoingon"></div>
                <br>
-               <input type="range" name="step" id="step" min="1" max="10" value="0">
+               <input type="range" name="step" id="stepper" min="1" max="10" value="0">
             </div>
             <ul id="functions">
             </ul>
@@ -211,6 +97,7 @@ int main() {
       <br>
       <div id="source">
       </div>
+      <!--
       <script type="text/javascript" src="static/js/behave.js"></script>
       <script type="text/javascript">
          var lineNumberFunc = function(data) {
@@ -237,6 +124,6 @@ int main() {
             autoOpen: true,
             autoIndent: true
          });
-         </script>
+      </script> -->
    </body>
 </html>

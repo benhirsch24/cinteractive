@@ -3,7 +3,6 @@
 }
 
 body {
-   padding: 1em;
 }
 
 textarea{
@@ -73,77 +72,43 @@ textarea:focus{
 
 #controls {
    position:absolute;
-   margin-left: 730px;
-   max-width: 450px;
-   width: 100%;
-}
-
-#steps {
-   text-align: center;
-   margin-bottom:1em;
-}
-
-#step {
-   width: 90%;
-}
-
-#functions {
-   margin-bottom: 1em;
-}
-
-#source {
-   height: 500px;
-   overflow: scroll;
-}
-
-#source.enlarge {
-   height: 100%;
-   position:fixed;
-   top:0;
-   left:0;
-   background-color:#fff;
-   width: 100%;
-}
-
-#args {
-   position: absolute;
-   right: 0;
-   padding-right: 1em;
-   list-style: none;
-   display: inline;
-   font-size: 12px;
-}
-
-#args li {
-   display: inline;
-}
-
-.param {
-   width: 50px;
-}
-
-#memory-container {
-   width: 700px;
-   padding:1em;
-}
-
-#memory {
-   list-style: none;
+   z-index:9999;
+   top: 3%;
+   right: 3%;
    padding: 1em;
+   background-color:#fff;
+   border: 1px solid #aaa;
 }
 
-#memory .mem {
-   padding: .7em;
+#heap {
+
 }
 
-#memory .loc {
-   border: 1px solid black;
-   display:inline;
-   padding: .5em;
-   margin-right: .3em;
+.heap_row {
+
 }
 
-#memory .value {
-   display:inline;
-   padding: .5em;
+.heap_loc {
+
+}
+
+.heap_node {
+
+}
+
+.opts_menu {
+   background-color:#000;
+   padding: 1em;
+   color: #fff;
+}
+
+.opts_menu label {
+   font-size: 12px !important;
+}
+
+.active_line {
+   font-weight: bold;
+   color: #000;
+   background-color:#FFFAAD;
+   padding: 3px;
 }

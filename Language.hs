@@ -45,6 +45,7 @@ instance ToJSON CFunDef where
  - NOTE: CExpr -- no next?
  -}
 instance ToJSON CStat where
+<<<<<<< HEAD
    toJSON (CLabel ident stat attrs inf) = object ["node" .= pack "CLabel", "ident" .= pshow ident, "next" .= toJSON stat, "line" .= nodeLine inf]
    toJSON (CCase expr stat inf) = object ["node" .= pack "CCase", "expr" .= toJSON expr, "next" .= toJSON stat, "line" .= nodeLine inf]
    toJSON (CCases expr1 expr2 stat inf) = object ["node" .= pack "CCases", "expr1" .= toJSON expr1, "expr2" .= toJSON expr2, "next" .= toJSON stat, "line" .= nodeLine inf]
@@ -55,6 +56,18 @@ instance ToJSON CStat where
    toJSON (CSwitch expr stat inf) = object ["node" .= pack "CSwitch", "expr" .= toJSON expr, "next" .= toJSON stat, "line" .= nodeLine inf]
    toJSON (CWhile guard stat dowhile inf) = object ["node" .= pack "CWhile", "guard" .= toJSON guard, "next" .= toJSON stat, "line" .= nodeLine inf]
    toJSON (CFor init guard step stat inf) = object ["node" .= pack "CFor", "init" .= initls, "guard" .= toJSON guard, "step" .= toJSON step, "next" .= stat, "line" .= nodeLine inf]
+=======
+   toJSON (CLabel ident stat attrs _) = object ["node" .= pack "CLabel", "ident" .= pshow ident, "next" .= toJSON stat]
+   toJSON (CCase expr stat _) = object ["node" .= pack "CCase", "expr" .= toJSON expr, "next" .= toJSON stat]
+   toJSON (CCases expr1 expr2 stat _) = object ["node" .= pack "CCases", "expr1" .= toJSON expr1, "expr2" .= toJSON expr2, "next" .= toJSON stat]
+   toJSON (CDefault stat _) = object ["node" .= pack "CDefault", "next" .= toJSON stat]
+   toJSON (CExpr expr _) = object ["node" .= pack "CExpr", "expr" .= toJSON expr]
+   toJSON (CCompound labels items _) = object ["node" .= pack "CCompound", "labels" .= map (pack . show) labels, "block_items" .= map toJSON items]
+   toJSON (CIf expr stif stelse _) = object ["node" .= pack "CIf", "guard" .= toJSON expr, "true" .= toJSON stif, "false" .= toJSON stelse]
+   toJSON (CSwitch expr stat _) = object ["node" .= pack "CSwitch", "expr" .= toJSON expr, "next" .= toJSON stat]
+   toJSON (CWhile guard stat dowhile _) = object ["node" .= pack "CWhile", "guard" .= toJSON guard, "next" .= toJSON stat]
+   toJSON (CFor init guard step stat _) = object ["node" .= pack "CFor", "init" .= initls, "guard" .= toJSON guard, "step" .= toJSON step, "next" .= stat]
+>>>>>>> 0308f83dc821fcc32e3e19f250de71a85ef47c86
       where
       initls = case init of
          Right expr -> toJSON expr

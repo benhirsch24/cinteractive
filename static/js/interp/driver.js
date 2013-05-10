@@ -23,18 +23,11 @@ function fun_args(fun) {
 }
 
 function updateMemory(st) {
-   var mem = $('#memory');
-   mem.empty();
+   var controls = $('#controls');
+   controls.empty();
 
-   var stack = $('#stack');
-   $('#stack .var_row').remove();
-
-   _(st.heap).forIn(function(value, loc) {
-      var li = $('<li></li>');
-      li.addClass('mem');
-      li.html('<span class="loc">' + loc + '</span>' + '<span class="value">' + ppMemValue(value) + '</span>');
-      mem.append(li);
-   });
+   var stack = $('<table></table>');
+   stack.attr('id', 'stack');
 
    var num_frames = st.stack.length;
    _(st.stack).map(function(frame, frameIdx){
@@ -56,6 +49,30 @@ function updateMemory(st) {
       stack.append(var_row);
       });
    });
+
+   var heap = $('<table></table>');
+   heap.attr('id', 'heapory');
+
+   _(st.heap).forIn(function(value, addr) {
+      var tr = $('<tr></tr>');
+      tr.addClass('heap_row');
+      
+      var loc = $('<td></td>');
+      loc.addClass('heap_loc');
+      var node = $('<td></td>');
+      node.addClass('heap_node');
+
+      loc.html(addr);
+      node.html(ppMemValue(value));
+
+      tr.append(loc);
+      tr.append(node);
+      heap.append(tr);
+   });
+   
+   controls.append(stack);
+   controls.append('<hr></hr>');
+   controls.append(heap);
 }
 
 function receiveAST(data) {
@@ -69,23 +86,11 @@ function receiveAST(data) {
       return;
    }
 
-   $('#functions').empty();
-
-   // create an li for each function decl
-   _(data["decls"])
-      .filter(function(node) {
-         if (node["node"] === "CFunDef") return true; else return false;})
-      .map('fun_def')
-      .map(function(fun) {
-         $('#functions').append('<h3>' + unquotify(fun["name"]) + fun_args(fun) + '</h3><div class="context"><a href="#" data-function="' + unquotify(fun["name"]) + '">Run</a></div>');
-      });
-
    glState = compile(data);
    glState.kont($('#whatsgoingon'));
    updateMemory(glState);
    var newstack = [{}];
    glState.stack = newstack.concat(glState.stack);
-   $('#functions').accordion();
 }
 
 function enlarge() { $('#source').addClass('enlarge'); }

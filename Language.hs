@@ -6,12 +6,15 @@ import Data.Aeson
 import Data.Text (Text, pack, unpack)
 import qualified Data.ByteString.UTF8 as BS
 
+nodeLine :: NodeInfo -> Int
+nodeLine = posRow . posOfNode
+
 {--
  - type CTranslUnit = CTranslationUnit NodeInfo
  - data CTranslationUnit a = CTranslUnit [CExternalDeclaration a] a
  -}
 instance ToJSON CTranslUnit where
-   toJSON (CTranslUnit edecls _) = object ["node" .= pack "CTranslUnit", "decls" .= map toJSON edecls]
+   toJSON (CTranslUnit edecls inf) = object ["node" .= pack "CTranslUnit", "decls" .= map toJSON edecls, "line" .= nodeLine inf]
 
 {--
  - type CExtDecl = CExternalDeclaration NodeInfo
@@ -35,32 +38,32 @@ instance ToJSON CExtDecl where
  - stmt is a compound statement (block) for function as AST ie Free Monad!
  -}
 instance ToJSON CFunDef where
-   toJSON (CFunDef declspecs declr decls stat _) = object ["node" .= pack "CFunDef", "fun_def" .= toJSON declr, "declarations" .= map toJSON decls, "statements" .= toJSON stat]
+   toJSON (CFunDef declspecs declr decls stat inf) = object ["node" .= pack "CFunDef", "fun_def" .= toJSON declr, "declarations" .= map toJSON decls, "statements" .= toJSON stat, "line" .= nodeLine inf]
 
 {--
  - CStatements and Exprs are both ASTs, TODO: not sure what the difference is
  - NOTE: CExpr -- no next?
  -}
 instance ToJSON CStat where
-   toJSON (CLabel ident stat attrs _) = object ["node" .= pack "CLabel", "ident" .= pshow ident, "next" .= toJSON stat]
-   toJSON (CCase expr stat _) = object ["node" .= pack "CCase", "expr" .= toJSON expr, "next" .= toJSON stat]
-   toJSON (CCases expr1 expr2 stat _) = object ["node" .= pack "CCases", "expr1" .= toJSON expr1, "expr2" .= toJSON expr2, "next" .= toJSON stat]
-   toJSON (CDefault stat _) = object ["node" .= pack "CDefault", "next" .= toJSON stat]
-   toJSON (CExpr expr _) = object ["node" .= pack "CExpr", "expr" .= toJSON expr]
-   toJSON (CCompound idents items _) = object ["node" .= pack "CCompound", "idents" .= map (pack . show) idents, "block_items" .= map toJSON items]
-   toJSON (CIf expr stif stelse _) = object ["node" .= pack "CIf", "guard" .= toJSON expr, "true" .= toJSON stif, "false" .= toJSON stelse]
-   toJSON (CSwitch expr stat _) = object ["node" .= pack "CSwitch", "expr" .= toJSON expr, "next" .= toJSON stat]
-   toJSON (CWhile guard stat dowhile _) = object ["node" .= pack "CWhile", "guard" .= toJSON guard, "next" .= toJSON stat]
-   toJSON (CFor init guard step stat _) = object ["node" .= pack "CFor", "init" .= initls, "guard" .= toJSON guard, "step" .= toJSON step, "next" .= stat]
+   toJSON (CLabel ident stat attrs inf) = object ["node" .= pack "CLabel", "ident" .= pshow ident, "next" .= toJSON stat, "line" .= nodeLine inf]
+   toJSON (CCase expr stat inf) = object ["node" .= pack "CCase", "expr" .= toJSON expr, "next" .= toJSON stat, "line" .= nodeLine inf]
+   toJSON (CCases expr1 expr2 stat inf) = object ["node" .= pack "CCases", "expr1" .= toJSON expr1, "expr2" .= toJSON expr2, "next" .= toJSON stat, "line" .= nodeLine inf]
+   toJSON (CDefault stat inf) = object ["node" .= pack "CDefault", "next" .= toJSON stat, "line" .= nodeLine inf]
+   toJSON (CExpr expr inf) = object ["node" .= pack "CExpr", "expr" .= toJSON expr, "line" .= nodeLine inf]
+   toJSON (CCompound idents items inf) = object ["node" .= pack "CCompound", "idents" .= map (pack . show) idents, "block_items" .= map toJSON items, "line" .= nodeLine inf]
+   toJSON (CIf expr stif stelse inf) = object ["node" .= pack "CIf", "guard" .= toJSON expr, "true" .= toJSON stif, "false" .= toJSON stelse, "line" .= nodeLine inf]
+   toJSON (CSwitch expr stat inf) = object ["node" .= pack "CSwitch", "expr" .= toJSON expr, "next" .= toJSON stat, "line" .= nodeLine inf]
+   toJSON (CWhile guard stat dowhile inf) = object ["node" .= pack "CWhile", "guard" .= toJSON guard, "next" .= toJSON stat, "line" .= nodeLine inf]
+   toJSON (CFor init guard step stat inf) = object ["node" .= pack "CFor", "init" .= initls, "guard" .= toJSON guard, "step" .= toJSON step, "next" .= stat, "line" .= nodeLine inf]
       where
       initls = case init of
          Right expr -> toJSON expr
          Left decl -> toJSON decl
-   toJSON (CGoto ident _) = object ["node" .= pack "CGoto", "label" .= pshow ident]
-   toJSON (CGotoPtr expr _) = object ["node" .= pack "CGotoPtr", "labelExpr" .= toJSON expr]
-   toJSON (CCont _) = object ["node" .= pack "CContinue"]
-   toJSON (CBreak _) = object ["node" .= pack "CBreak"]
-   toJSON (CReturn expr _) = object ["node" .= pack "CReturn", "expr" .= toJSON expr]
+   toJSON (CGoto ident inf) = object ["node" .= pack "CGoto", "label" .= pshow ident, "line" .= nodeLine inf]
+   toJSON (CGotoPtr expr inf) = object ["node" .= pack "CGotoPtr", "labelExpr" .= toJSON expr, "line" .= nodeLine inf]
+   toJSON (CCont inf) = object ["node" .= pack "CContinue", "line" .= nodeLine inf]
+   toJSON (CBreak inf) = object ["node" .= pack "CBreak", "line" .= nodeLine inf]
+   toJSON (CReturn expr inf) = object ["node" .= pack "CReturn", "expr" .= toJSON expr, "line" .= nodeLine inf]
    toJSON (CAsm _ _) = object ["node" .= pack "CAsm"]
 
 instance ToJSON CBlockItem where
@@ -69,16 +72,16 @@ instance ToJSON CBlockItem where
    toJSON (CNestedFunDef def) = toJSON def
 
 instance ToJSON CInit where
-   toJSON (CInitExpr expr _) = object ["node" .= pack "CInit", "assignment" .= toJSON expr]
-   toJSON (CInitList init_list _) = object ["node" .= pack "CInitList", "list" .= map toJSON init_list]
+   toJSON (CInitExpr expr inf) = object ["node" .= pack "CInit", "assignment" .= toJSON expr, "line" .= nodeLine inf]
+   toJSON (CInitList init_list inf) = object ["node" .= pack "CInitList", "list" .= map toJSON init_list, "line" .= nodeLine inf]
 
 instance ToJSON CDesignator where
-   toJSON (CArrDesig expr _) = object ["node" .= pack "CArrDesig", "expr" .= toJSON expr]
-   toJSON (CMemberDesig ident _) = object ["node" .= pack "CMemberDesig", "ident" .= pshow ident]
-   toJSON (CRangeDesig expr1 expr2 _) = object ["node" .= pack "CRangeDesig", "from" .= toJSON expr1, "to" .= toJSON expr2]
+   toJSON (CArrDesig expr inf) = object ["node" .= pack "CArrDesig", "expr" .= toJSON expr, "line" .= nodeLine inf]
+   toJSON (CMemberDesig ident inf) = object ["node" .= pack "CMemberDesig", "ident" .= pshow ident, "line" .= nodeLine inf]
+   toJSON (CRangeDesig expr1 expr2 inf) = object ["node" .= pack "CRangeDesig", "from" .= toJSON expr1, "to" .= toJSON expr2, "line" .= nodeLine inf]
 
 instance ToJSON CDecl where
-   toJSON (CDecl specs decls _) = object ["node" .= pack "CDecl", "specifiers" .= map toJSON specs, "declarations" .= map ppDecl decls]
+   toJSON (CDecl specs decls inf) = object ["node" .= pack "CDecl", "specifiers" .= map toJSON specs, "declarations" .= map ppDecl decls, "line" .= nodeLine inf]
       where
       ppDecl (decltr, initzr, expr) = object ["node" .= pack "DECL", "declarator" .= declhuh, "initializer" .= inithuh, "expr" .= exprhuh]
          where
@@ -93,12 +96,12 @@ instance ToJSON CDecl where
                      Just expr -> toJSON expr
 
 instance ToJSON CDeclr where
-   toJSON (CDeclr name indirections asmname cattrs _) = object ["node" .= pack "CDeclr", "name" .= maybe "anonymous" show name, "attrs" .= map toJSON indirections]
+   toJSON (CDeclr name indirections asmname cattrs inf) = object ["node" .= pack "CDeclr", "name" .= maybe "anonymous" show name, "attrs" .= map toJSON indirections, "line" .= nodeLine inf]
 
 instance ToJSON CDerivedDeclr where
-   toJSON (CPtrDeclr quals _) = object ["node" .= pack "CPtrDeclr", "qualifiers" .= map toJSON quals]
-   toJSON (CArrDeclr quals sz _) = object ["node" .= pack "CArrDeclr", "qualifiers" .= map toJSON quals, "size" .= toJSON sz]
-   toJSON (CFunDeclr params attrs _) = object $ ["node" .= pack "CFunDeclr"] ++ funParams params ++ ["attrs" .= toJSON attrs]
+   toJSON (CPtrDeclr quals inf) = object ["node" .= pack "CPtrDeclr", "qualifiers" .= map toJSON quals, "line" .= nodeLine inf]
+   toJSON (CArrDeclr quals sz inf) = object ["node" .= pack "CArrDeclr", "qualifiers" .= map toJSON quals, "size" .= toJSON sz, "line" .= nodeLine inf]
+   toJSON (CFunDeclr params attrs inf) = object $ ["node" .= pack "CFunDeclr", "line" .= nodeLine inf] ++ funParams params ++ ["attrs" .= toJSON attrs]
       where
       funParams (Right (decls, isVariadic)) = ["params" .= map toJSON decls, "isVariadic" .= pshow isVariadic]
       funParams (Left names) = ["params" .= map pshow names, "isVariadic" .= pack "False"]
@@ -113,34 +116,34 @@ instance ToJSON CDeclSpec where
    toJSON (CTypeQual qual) = object ["node" .= pack "CTypeQual", "qual" .= toJSON qual]
 
 instance ToJSON CStorageSpec where
-   toJSON (CAuto _) = object ["node" .= pack "CAuto"]
-   toJSON (CRegister _) = object ["node" .= pack "CRegister"]
-   toJSON (CStatic _) = object ["node" .= pack "CStatic"]
-   toJSON (CExtern _) = object ["node" .= pack "CExtern"]
-   toJSON (CTypedef _) = object ["node" .= pack "CTypedef"]
-   toJSON (CThread _) = object ["node" .= pack "CThread"]
+   toJSON (CAuto inf) = object ["node" .= pack "CAuto", "line" .= nodeLine inf]
+   toJSON (CRegister inf) = object ["node" .= pack "CRegister", "line" .= nodeLine inf]
+   toJSON (CStatic inf) = object ["node" .= pack "CStatic", "line" .= nodeLine inf]
+   toJSON (CExtern inf) = object ["node" .= pack "CExtern", "line" .= nodeLine inf]
+   toJSON (CTypedef inf) = object ["node" .= pack "CTypedef", "line" .= nodeLine inf]
+   toJSON (CThread inf) = object ["node" .= pack "CThread", "line" .= nodeLine inf]
 
 instance ToJSON CTypeSpec where
-   toJSON (CVoidType _) = object ["node" .= pack "CVoidType"]
-   toJSON (CCharType _) = object ["node" .= pack "CCharType"]
-   toJSON (CShortType _) = object ["node" .= pack "CShortType"]
-   toJSON (CIntType _) = object ["node" .= pack "CIntType"]
-   toJSON (CLongType _) = object ["node" .= pack "CLongType"]
-   toJSON (CFloatType _) = object ["node" .= pack "CFloatType"]
-   toJSON (CDoubleType _) = object ["node" .= pack "CDoubleType"]
-   toJSON (CSignedType _) = object ["node" .= pack "CSignedType"]
-   toJSON (CUnsigType _) = object ["node" .= pack "CUnsigType"]
-   toJSON (CBoolType _) = object ["node" .= pack "CBoolType"]
-   toJSON (CComplexType _) = object ["node" .= pack "CComplexType"]
-   toJSON (CSUType struct_or_union _) = object ["node" .= pack "CSUType", "sutype" .= toJSON struct_or_union]
-   toJSON (CEnumType enum _) = object ["node" .= pack "CEnumType", "enum" .= toJSON enum]
-   toJSON (CTypeDef name _) = object ["node" .= pack "CTypeDef", "name" .= pshow name]
-   toJSON (CTypeOfExpr expr _) = object ["node" .= pack "CTypeOfExpr", "expr" .= toJSON expr]
-   toJSON (CTypeOfType tipe _) = object ["node" .= pack "CTypeOfType", "type" .= toJSON tipe]
+   toJSON (CVoidType inf) = object ["node" .= pack "CVoidType", "line" .= nodeLine inf]
+   toJSON (CCharType inf) = object ["node" .= pack "CCharType", "line" .= nodeLine inf]
+   toJSON (CShortType inf) = object ["node" .= pack "CShortType", "line" .= nodeLine inf]
+   toJSON (CIntType inf) = object ["node" .= pack "CIntType", "line" .= nodeLine inf]
+   toJSON (CLongType inf) = object ["node" .= pack "CLongType", "line" .= nodeLine inf]
+   toJSON (CFloatType inf) = object ["node" .= pack "CFloatType", "line" .= nodeLine inf]
+   toJSON (CDoubleType inf) = object ["node" .= pack "CDoubleType", "line" .= nodeLine inf]
+   toJSON (CSignedType inf) = object ["node" .= pack "CSignedType", "line" .= nodeLine inf]
+   toJSON (CUnsigType inf) = object ["node" .= pack "CUnsigType", "line" .= nodeLine inf]
+   toJSON (CBoolType inf) = object ["node" .= pack "CBoolType", "line" .= nodeLine inf]
+   toJSON (CComplexType inf) = object ["node" .= pack "CComplexType", "line" .= nodeLine inf]
+   toJSON (CSUType struct_or_union inf) = object ["node" .= pack "CSUType", "sutype" .= toJSON struct_or_union, "line" .= nodeLine inf]
+   toJSON (CEnumType enum inf) = object ["node" .= pack "CEnumType", "enum" .= toJSON enum, "line" .= nodeLine inf]
+   toJSON (CTypeDef name inf) = object ["node" .= pack "CTypeDef", "name" .= pshow name, "line" .= nodeLine inf]
+   toJSON (CTypeOfExpr expr inf) = object ["node" .= pack "CTypeOfExpr", "expr" .= toJSON expr, "line" .= nodeLine inf]
+   toJSON (CTypeOfType tipe inf) = object ["node" .= pack "CTypeOfType", "type" .= toJSON tipe, "line" .= nodeLine inf]
 
 instance ToJSON CStructUnion where
-   toJSON (CStruct CStructTag ident fields attrs _) = object $ ["node" .= pack "CStruct", "ident" .= pshow ident] ++ maybeJSON fields
-   toJSON (CStruct CUnionTag ident fields attrs _) = object $ ["node" .= pack "CUnion", "ident" .= pshow ident] ++ maybeJSON fields
+   toJSON (CStruct CStructTag ident fields attrs inf) = object $ ["node" .= pack "CStruct", "ident" .= pshow ident, "line" .= nodeLine inf] ++ maybeJSON fields
+   toJSON (CStruct CUnionTag ident fields attrs inf) = object $ ["node" .= pack "CUnion", "ident" .= pshow ident, "line" .= nodeLine inf] ++ maybeJSON fields
 
 maybeJSON Nothing = ["fields" .= pack "Null"]
 maybeJSON (Just decls) = ["fields" .= map toJSON decls]
@@ -157,21 +160,21 @@ maybeJSON (Just decls) = ["fields" .= map toJSON decls]
  -
 --}
 instance ToJSON CEnum where
-   toJSON (CEnum name enum_list attrs _) = object ["node" .= pack "CEnum", "name" .= pshow name, "enum-list" .= thelist enum_list, "attrs" .= map toJSON attrs]
+   toJSON (CEnum name enum_list attrs inf) = object ["node" .= pack "CEnum", "name" .= pshow name, "enum-list" .= thelist enum_list, "attrs" .= map toJSON attrs, "line" .= nodeLine inf]
       where
       thelist Nothing = ["Null"]
       thelist (Just elist) = map listToJSON elist
       listToJSON (name, val) = object ["enum" .= pshow name, "val" .= toJSON val]
 
 instance ToJSON CTypeQual where
-   toJSON (CConstQual _) = object ["node" .= pack "CConstQual"]
-   toJSON (CVolatQual _) = object ["node" .= pack "CVolatQual"]
-   toJSON (CRestrQual _) = object ["node" .= pack "CRestrQual"]
-   toJSON (CInlineQual _) = object ["node" .= pack "CInlineQual"]
+   toJSON (CConstQual inf) = object ["node" .= pack "CConstQual", "line" .= nodeLine inf]
+   toJSON (CVolatQual inf) = object ["node" .= pack "CVolatQual", "line" .= nodeLine inf]
+   toJSON (CRestrQual inf) = object ["node" .= pack "CRestrQual", "line" .= nodeLine inf]
+   toJSON (CInlineQual inf) = object ["node" .= pack "CInlineQual", "line" .= nodeLine inf]
    toJSON (CAttrQual attr) = object ["node" .= pack "CAttrQual", "attr" .= toJSON attr]
 
 instance ToJSON CAttr where
-   toJSON (CAttr name params _) = object ["node" .= pack "CAttr", "name" .= pshow name, "params" .= map toJSON params]
+   toJSON (CAttr name params inf) = object ["node" .= pack "CAttr", "name" .= pshow name, "params" .= map toJSON params, "line" .= nodeLine inf]
 
 instance ToJSON CBinaryOp where
    toJSON CMulOp = String $ pack "CMulOp"
@@ -220,44 +223,44 @@ instance ToJSON CAssignOp where
 
 
 instance ToJSON CExpr where
-   toJSON (CComma exprs _) = object ["node" .= pack "CComma", "exprs" .= map toJSON exprs]-- comma expr list n >= 2
-   toJSON (CAssign op lvalue rvalue _) = object ["node" .= pack "CAssign", "op" .= toJSON op, "lvalue" .= toJSON lvalue, "rvalue" .= toJSON rvalue]
-   toJSON (CCond cond texpr fexpr _) = object ["node" .= pack "CCond", "cond" .= toJSON cond, "true" .= toJSON texpr, "false" .= toJSON fexpr]
-   toJSON (CBinary op erand1 erand2 _) = object ["node" .= pack "CBinary", "op" .= toJSON op, "erand1" .= toJSON erand1, "erand2" .= toJSON erand2]
-   toJSON (CCast decl expr _) = object ["node" .= pack "CCast", "type" .= toJSON decl, "expr" .= toJSON expr]
-   toJSON (CUnary op expr _) = object ["node" .= pack "CUnary", "op" .= toJSON op, "expr" .= toJSON expr]
-   toJSON (CSizeofExpr expr _) = object ["node" .= pack "CSizeofExpr", "expr" .= toJSON expr]
-   toJSON (CSizeofType tipe _) = object ["node" .= pack "CSizeofType", "type" .= toJSON tipe]
-   toJSON (CAlignofExpr expr _) = object ["node" .= pack "CAlignofExpr", "expr" .= toJSON expr]
-   toJSON (CAlignofType tipe _) = object ["node" .= pack "CAlignofType", "type" .= toJSON tipe]
-   toJSON (CComplexReal real _) = object ["node" .= pack "CComplexReal", "real" .= toJSON real]
-   toJSON (CComplexImag imag _) = object ["node" .= pack "CComplexImag", "imag" .= toJSON imag]
-   toJSON (CIndex array index _) = object ["node" .= pack "CIndex", "array" .= toJSON array, "index" .= toJSON index]
-   toJSON (CCall fun args _) = object ["node" .= pack "CCall", "function" .= toJSON fun, "args" .= map toJSON args]
-   toJSON (CMember struct name deref _) = object ["node" .= pack "CMember", "name" .= pshow name, "struct" .= toJSON struct, "deref?" .= toJSON deref]
-   toJSON (CVar ident _) = object ["node" .= pack "CVar", "name" .= pshow ident]
+   toJSON (CComma exprs inf) = object ["node" .= pack "CComma", "exprs" .= map toJSON exprs, "line" .= nodeLine inf]-- comma expr list n >= 2
+   toJSON (CAssign op lvalue rvalue inf) = object ["node" .= pack "CAssign", "op" .= toJSON op, "lvalue" .= toJSON lvalue, "rvalue" .= toJSON rvalue, "line" .= nodeLine inf]
+   toJSON (CCond cond texpr fexpr inf) = object ["node" .= pack "CCond", "cond" .= toJSON cond, "true" .= toJSON texpr, "false" .= toJSON fexpr, "line" .= nodeLine inf]
+   toJSON (CBinary op erand1 erand2 inf) = object ["node" .= pack "CBinary", "op" .= toJSON op, "erand1" .= toJSON erand1, "erand2" .= toJSON erand2, "line" .= nodeLine inf]
+   toJSON (CCast decl expr inf) = object ["node" .= pack "CCast", "type" .= toJSON decl, "expr" .= toJSON expr, "line" .= nodeLine inf]
+   toJSON (CUnary op expr inf) = object ["node" .= pack "CUnary", "op" .= toJSON op, "expr" .= toJSON expr, "line" .= nodeLine inf]
+   toJSON (CSizeofExpr expr inf) = object ["node" .= pack "CSizeofExpr", "expr" .= toJSON expr, "line" .= nodeLine inf]
+   toJSON (CSizeofType tipe inf) = object ["node" .= pack "CSizeofType", "type" .= toJSON tipe, "line" .= nodeLine inf]
+   toJSON (CAlignofExpr expr inf) = object ["node" .= pack "CAlignofExpr", "expr" .= toJSON expr, "line" .= nodeLine inf]
+   toJSON (CAlignofType tipe inf) = object ["node" .= pack "CAlignofType", "type" .= toJSON tipe, "line" .= nodeLine inf]
+   toJSON (CComplexReal real inf) = object ["node" .= pack "CComplexReal", "real" .= toJSON real, "line" .= nodeLine inf]
+   toJSON (CComplexImag imag inf) = object ["node" .= pack "CComplexImag", "imag" .= toJSON imag, "line" .= nodeLine inf]
+   toJSON (CIndex array index inf) = object ["node" .= pack "CIndex", "array" .= toJSON array, "index" .= toJSON index, "line" .= nodeLine inf]
+   toJSON (CCall fun args inf) = object ["node" .= pack "CCall", "function" .= toJSON fun, "args" .= map toJSON args, "line" .= nodeLine inf]
+   toJSON (CMember struct name deref inf) = object ["node" .= pack "CMember", "name" .= pshow name, "struct" .= toJSON struct, "deref?" .= toJSON deref, "line" .= nodeLine inf]
+   toJSON (CVar ident inf) = object ["node" .= pack "CVar", "name" .= pshow ident, "line" .= nodeLine inf]
    toJSON (CConst const) = object ["node" .= pack "CConst", "const" .= toJSON const]
-   toJSON (CCompoundLit decl initl _) = object ["node" .= pack "CCompoundLit", "decl" .= toJSON decl, "init-list" .= map toJSON initl]
+   toJSON (CCompoundLit decl initl inf) = object ["node" .= pack "CCompoundLit", "decl" .= toJSON decl, "init-list" .= map toJSON initl, "line" .= nodeLine inf]
    toJSON (CStatExpr stat _) = toJSON stat
-   toJSON (CLabAddrExpr label _) = object ["node" .= pack "CLabAddrExpr", "label" .= pshow label]
+   toJSON (CLabAddrExpr label inf) = object ["node" .= pack "CLabAddrExpr", "label" .= pshow label, "line" .= nodeLine inf]
    toJSON (CBuiltinExpr thing) = object ["node" .= pack "CBuiltinExpr", "expr" .= toJSON thing]
 
 instance ToJSON CBuiltin where
-   toJSON (CBuiltinVaArg expr decl _) = object ["node" .= pack "CBuiltinVaArg", "expr" .= toJSON expr, "type" .= toJSON decl]
-   toJSON (CBuiltinOffsetOf decl desigs _) = object ["node" .= pack "CBuiltinOffsetOf", "type" .= toJSON decl, "designator-list" .= map toJSON desigs]
-   toJSON (CBuiltinTypesCompatible decl1 decl2 _) = object ["node" .= pack "CBuiltinTypesCompatible", "type1" .= toJSON decl1, "type2" .= toJSON decl2]
+   toJSON (CBuiltinVaArg expr decl inf) = object ["node" .= pack "CBuiltinVaArg", "expr" .= toJSON expr, "type" .= toJSON decl, "line" .= nodeLine inf]
+   toJSON (CBuiltinOffsetOf decl desigs inf) = object ["node" .= pack "CBuiltinOffsetOf", "type" .= toJSON decl, "designator-list" .= map toJSON desigs, "line" .= nodeLine inf]
+   toJSON (CBuiltinTypesCompatible decl1 decl2 inf) = object ["node" .= pack "CBuiltinTypesCompatible", "type1" .= toJSON decl1, "type2" .= toJSON decl2, "line" .= nodeLine inf]
 
 instance ToJSON CConst where --i
-   toJSON (CIntConst int _) = object ["node" .= pack "CIntConst", "val" .= toJSON int]
-   toJSON (CCharConst char _) = object ["node" .= pack "CCharConst", "val" .= toJSON char]
-   toJSON (CFloatConst float _) = object ["node" .= pack "CFloatConst", "val" .= toJSON float]
-   toJSON (CStrConst str _) = object ["node" .= pack "CStrConst", "val" .= toJSON str]
+   toJSON (CIntConst int inf) = object ["node" .= pack "CIntConst", "val" .= toJSON int, "line" .= nodeLine inf]
+   toJSON (CCharConst char inf) = object ["node" .= pack "CCharConst", "val" .= toJSON char, "line" .= nodeLine inf]
+   toJSON (CFloatConst float inf) = object ["node" .= pack "CFloatConst", "val" .= toJSON float, "line" .= nodeLine inf]
+   toJSON (CStrConst str inf) = object ["node" .= pack "CStrConst", "val" .= toJSON str, "line" .= nodeLine inf]
 
 instance ToJSON CString where --i
    toJSON (CString str _) = object ["node" .= pack "CString", "string" .= pshow str]
 
 instance ToJSON CStrLit where --i
-   toJSON (CStrLit str _) = object ["node" .= pack "CStrLit", "string" .= toJSON str]
+   toJSON (CStrLit str inf) = object ["node" .= pack "CStrLit", "string" .= toJSON str, "line" .= nodeLine inf]
 
 instance ToJSON CInteger where --i
    toJSON (CInteger int base (Flags flag)) = object ["node" .= pack "CInteger", "int" .= pshow int, "base" .= pshow base, "flags" .= pshow flag]

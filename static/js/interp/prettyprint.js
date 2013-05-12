@@ -59,7 +59,7 @@ function ipprint(ast) {
 }
 
 function ppMemValue(value) {
-   if (value["node"] === "CFunDef") {
+   if (_.isObject(value) && value["node"] === "CFunDef") {
       return "Function: " + unquotify(value["fun_def"]["name"]);
    } else {
       return value;

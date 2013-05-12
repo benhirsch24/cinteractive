@@ -12,6 +12,13 @@
 //
 // AST -> Initial State
 
+var currLine = 0;
+function hilite_line(line, cm) {
+   cm.removeLineClass(currLine, 'wrap', 'active_line');
+   cm.addLineClass(line - 1, 'wrap', 'active_line');
+   currLine = line - 1;
+};
+
 function compile(ast) {
    var state = build_initial_heap(ast);
    
@@ -19,7 +26,7 @@ function compile(ast) {
         control: state.heap[state.stack[0]["main"]]
       , stack:   state.stack
       , heap:    state.heap,
-        kont: function(ui) {
+        kont: function(ui, cm) {
            ui.html('Main on the stack');
         }
       , next: state.next
@@ -52,10 +59,12 @@ function push_params(state) {
 var step = {};
 step["CThunk"] = function(state) {
    var node = state.control["eval"];
+   var line = state.control["line"];
    node["thunk"] = state.control["thunk"];
    node[state.control["thunk"]] = {val: state.ret, state: state};
-   state.kont = function(ui) {
+   state.kont = function(ui, cm) {
       ui.html('Executing thunk, filling hole ' + node["thunk"]);
+      hilite_line(line, cm);
    };
    state.ret = undefined;
    state.control = undefined;
@@ -64,17 +73,20 @@ step["CThunk"] = function(state) {
 };
 step["CFunDef"] = function(state) {
    var name = state.control['fun_def']['name'];
+   var line = state.control['line'];
    stack = push_params(state);
-   state.kont = function(ui) {
+   state.kont = function(ui, cm) {
       ui.html('Calling Function: ' + unquotify(name));
+      hilite_line(line, cm);
    };
-   state.dump = _(state.dump).push(_(state.control["statements"]["block_items"]).clone());
+   state.dump = _(state.dump).push(_(state.control["statements"]["block_items"]).cloneDeep());
    state.control = undefined;
    return state;
 }
 step["CDecl"] = function(state) {
    var type = evalSpecifiers(state.control["specifiers"], state);
    var names = '';
+   var line = state.control['line'];
 
    _(state.control["declarations"]).map(function (decl) {
       var val;
@@ -83,7 +95,9 @@ step["CDecl"] = function(state) {
          state = val.state;
          val = val.val;
       } else {
-         val = initial_value(type, state);
+         var valM = initial_value(decl, type, state);
+         val = valM.value;
+         state = valM.state;
       }
          
       var name = unquotify(decl["declarator"]["name"]);
@@ -95,10 +109,55 @@ step["CDecl"] = function(state) {
    });
 
    state.control = undefined;
-   state.kont = function(ui) {
+   state.kont = function(ui, cm) {
       ui.html('Declared: ' + names);
+      hilite_line(line, cm);
    };
 
+   return state;
+};
+step["CUnary"] = function(state) {
+   var line = state.control.line;
+   var msg = '';
+
+   var val = eval(state.control["expr"], state);
+   var v = val.val;
+   var ret;
+
+   var remove = false;
+
+   if (_.isString(v)) // this is a variable of some kind
+      addr = varLookup(v, state.stack);
+   else { // you can do eg 1++ which shouldn't actually store anywhere, just temporary
+      remove = true;
+      state.heap[-1] = v;
+      addr = -1;
+   }
+
+   var ops = {};
+   ops["CPreIncOp"] = function(u) { msg = 'Pre-incrementing ' + v; state.heap[addr] = u + 1; return u + 1; }
+   ops["CPreDecOp"] = function(u) { msg = 'Pre-decrementing ' + v; state.heap[addr] = u - 1; return u - 1; }
+   ops["CPostIncOp"] = function(u) { msg = 'Post-incrementing ' + v + ', this takes place after the stmt'; state.heap[addr] = u + 1; return u; }
+   ops["CPostDecOp"] = function(u) { msg = 'Post-decrementing ' + v + ', this takes place after the stmt'; state.heap[addr] = u - 1; return u; }
+   ops["CAdrOp"] = function(u) { msg = 'Returning address of ' + v; return addr; }
+   ops["CIndOp"] = function(u) { msg = 'Returing where ' + v + ' points to.'; return state.heap[addr]; }
+   ops["CPlusOp"] = function(u) { return u; } // TODO ignoring these two for now because unary +?
+   ops["CMinOp"] = function(u) { return u; }
+   ops["CCompOp"] = function(u) { msg = "Returning one's complement of " + v; return ~u; }
+   ops["CNegOp"] = function(u) { msg = "Returing negation of " + v; return -u; }
+
+   if (remove) {
+      delete state.heap[-1];
+   }
+
+   var op = ops[state.control["op"]];
+   var ret = op(state.heap[addr]);
+
+   console.log("Popping back from CUnary" + msg);
+   state.kont = function(ui, cm) {
+      hilite_line(line, cm);
+      ui.html(msg);
+   };
    return state;
 };
 step["CExpr"] = function(state) {
@@ -106,7 +165,8 @@ step["CExpr"] = function(state) {
    return step[state.control["node"]](state);
 };
 step["CAssign"] = function(state) {
-   var control = _(state.control).clone();
+   var control = _(state.control).cloneDeep();
+   var line = control['line'];
    var lvalue = eval(state.control["lvalue"], state);
 
    if (_(state.control["thunk"]).isUndefined()) {
@@ -126,14 +186,16 @@ step["CAssign"] = function(state) {
       newNode["node"] = "CThunk";
       newNode["eval"] = control;
       newNode["thunk"] = "rvalue";
+      newNode["line"] = line;
       newNode["rvalue"] = {};
       _(state.dump).last().unshift(newNode);
       _(state.dump).push([rvalue.val]);
-      state.kont = function(ui) {
+      state.kont = function(ui, cm) {
          ui.html('Created thunk on assign');
+         hilite_line(line, cm);
       }
       console.log("Created thunk");
-      console.log(_(state).clone());
+      console.log(_(state).cloneDeep());
       return state;
    }
 
@@ -156,8 +218,9 @@ step["CAssign"] = function(state) {
 
    state.control = undefined;
    state.heap[state.stack[0][lvalue.val]] = val;
-   state.kont = function(ui) {
+   state.kont = function(ui, cm) {
       ui.html('Changed var ' + lvalue.val + ' to ' + val);
+      hilite_line(line, cm);
    };
    return state;
 };
@@ -170,21 +233,74 @@ step["CCall"] = function(state) {
    return state;
 }
 step["CCompound"] = function(state) {
-   // idents?
+   var line = state.control.line;
    state.dump = _(state.dump).push(state.control["block_items"]);
-   state.kont = function(ui) {
+   state.kont = function(ui, cm) {
       ui.html('Compound statements');
+      hilite_line(line, cm);
    };
    state.control = undefined;
    return state;
 }
+step["CFor"] = function(state) {
+   var line = state.control.line;
+
+   if (!(_.isUndefined(state.control["init"]))) {
+      var init = eval(state.control["init"], state);
+      state = init.state;
+      state.control["init"] = undefined;
+   }
+
+   var guard = eval(state.control["guard"], state);
+   state = guard.state;
+
+   var msg = '';
+
+   if (guard.val === 0 || !guard.val) {
+      msg = "Guard was false, continuting";
+   } else {
+      msg = "Guard was true, looping";
+      _(state.dump).last().unshift(_.cloneDeep(state.control));
+      _(state.dump).last().unshift(_.cloneDeep(state.control["step"]));
+      _(state.dump).last().unshift(_.cloneDeep(state.control["next"]));
+   }
+
+   state.kont = function(ui, cm) {
+      hilite_line(line, cm);
+      ui.html(msg);
+   };
+   return state;
+};
+
+step["CWhile"] = function(state) {
+   var line = state.control.line;
+   var guard = eval(state.control["guard"], state);
+   state = guard.state;
+
+   if (guard.val === 0 || !guard.val) {
+      state.kont = function(ui, cm) {
+         ui.html("Condition was false, continuing");
+         hilite_line(line, cm);
+      };
+   } else {
+      state.kont = function(ui, cm) {
+         ui.html("Condition was true, looping");
+         hilite_line(line, cm);
+      };
+      _(state.dump).last().unshift(_.cloneDeep(state.control));
+      _(state.dump).last().unshift(_.cloneDeep(state.control["next"]));
+   }
+
+   return state;
+};
 
 step["CIf"] = function(state) {
+   var line = state.control.line;
    var guard = eval(state.control["guard"], state);
    state = guard.state;
    var happ = '';
 
-   if (guard.val === 0) {
+   if (guard.val === 0 || !guard.val) {
       _(state.dump).last().unshift(state.control["false"]);
       happ = 'Condition was false.';
    } else {
@@ -192,8 +308,9 @@ step["CIf"] = function(state) {
       happ = 'Condition was true.';
    }
 
-   state.kont = function(ui) {
+   state.kont = function(ui, cm) {
       ui.html(happ);
+      hilite_line(line, cm);
    };
    state.control = undefined;
 
@@ -202,6 +319,7 @@ step["CIf"] = function(state) {
 
 step["CReturn"] = function(state) {
    var ret = eval(state.control, state);
+   var line = state.control.line;
 
    if (_(ret.val).isString())
       ret.val = state.heap[varLookup(ret.val, state.stack)];
@@ -213,8 +331,9 @@ step["CReturn"] = function(state) {
    });
 
    _(state.stack).shift();
-   state.kont = function(ui) {
+   state.kont = function(ui, cm) {
       ui.html('Returning val: ' + ret.val);
+      hilite_line(line, cm);
    };
    state.ret = ret.val;
    state.control = undefined;
@@ -223,16 +342,21 @@ step["CReturn"] = function(state) {
 };
 
 
-function initial_value(type) {
-   var val = 0;
+function initial_value(decl, type, state) {
+   var val = 0,
+       s = {};
 
-   /*
-    * if (type = blah) {
-    * }
-    *
-    */
+   // if there's an initializer, use that
+   if (!(_.isNull(decl["initializer"])) && decl["initializer"]["node"] === "CInit") {
+      var init = eval(decl["initializer"], state);
+      s = init.state;
+      val = init.val;
+   } // otherwise decide based on the type
+   else {
+      s = state;
+   }
 
-   return val;
+   return {val: val, state: s};
 }
 
 // TODO: rest of specifiers
@@ -260,8 +384,10 @@ function resolveVar(node, state) {
    var type = evalSpecifiers(node["specifiers"], state);
 
    _(node["declarations"]).map(function(d) {
+      var value = initial_value(d, type, state);
+      state = value.state;
       var name = unquotify(d['declarator']['name']);
-      state.heap[state.next] = initial_value(d, type);
+      state.heap[state.next] = value.val;
       state.stack[0][name] = state.next;
       state.next += 1;
    });
@@ -274,8 +400,10 @@ compileDecl["CDecl"] = function(node, state) {
    var type = evalSpecifiers(node["specifiers"], state);
 
    _(node["declarations"]).map(function(d) {
+      var value = initial_value(d, type, state);
+      state = value.state;
       var name = unquotify(d['declarator']['name']);
-      state.heap[state.next] = initial_value(d, type);
+      state.heap[state.next] = value.val;
       state.stack[0][name] = state.next;
       state.next += 1;
    });
@@ -292,7 +420,7 @@ compileDecl["CFunDef"] = function(node, state) {
 };
 
 function build_initial_heap(ast) {
-   var state = {heap: {}, stack: [{}], next: 0};
+   var state = {heap: {}, stack: [{}], next: 0, dump: []};
    var decls = ast["decls"];
 
    _(decls).map(function(n) {

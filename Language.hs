@@ -41,8 +41,7 @@ instance ToJSON CFunDef where
    toJSON (CFunDef declspecs declr decls stat inf) = object ["node" .= pack "CFunDef", "fun_def" .= toJSON declr, "declarations" .= map toJSON decls, "statements" .= toJSON stat, "line" .= nodeLine inf]
 
 {--
- - CStatements and Exprs are both ASTs, TODO: not sure what the difference is
- - NOTE: CExpr -- no next?
+ - CStatements and Exprs are both ASTs
  -}
 instance ToJSON CStat where
    toJSON (CLabel ident stat attrs inf) = object ["node" .= pack "CLabel", "ident" .= pshow ident, "next" .= toJSON stat, "line" .= nodeLine inf]

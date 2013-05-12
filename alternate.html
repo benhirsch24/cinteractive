@@ -17,7 +17,6 @@
       <script src="static/js/interp/driver.js"></script>
       <script src="static/js/addon/edit/closebrackets.js"></script>
       <script>
-         var CM
          $(document).ready(function() {
             CM = CodeMirror.fromTextArea(document.getElementById("code"), {
                indentUnit: 3,
@@ -28,18 +27,20 @@
                theme: 'neat',
                autoCloseBrackets: true
             });
-            var controls = $('<div></div>');
-            controls.attr('id', 'controls');
-            $('.CodeMirror').append(controls);
+            CM.addKeyMap({
+               'Shift-Ctrl-f': function(cm) {
+                  nextStep();
+               }
+            });
             $('#step').click(uiStep);
+            $('#autoclose').change(function(e){ CM.setOption('autoCloseBrackets', $(e.currentTarget).prop('checked')) });
             $('.opts_menu').toggle();
             $('#options').click(function() {$('.opts_menu').animate({height: 'toggle'});});
-            $('#collectsteps').click(collectSteps);
             $('#code').focus();
             $("#compile").click(function() {
                $('#functions').empty();
                $('#source').empty();
-               $.post('http://localhost:3000/parse', $('#code').val())
+               $.post('http://localhost:3000/parse', CM.getValue())
                .success(receiveAST)
                .error(function(err) { $('#functions').html(err)});
                return false;
@@ -69,10 +70,11 @@
       <div class="opts_menu row">
          <div class="span4">
             <label for="autoclosebrackets">Auto Close Brackets
-               <input type="checkbox" name="autoclosebrackets">
+               <input type="checkbox" checked="checked" id="autoclose" name="autoclosebrackets">
             </label>
          </div>
       </div>
+      <div class="alert alert-error" style="display:none;"></div>
       <textarea id="code">
 unsigned int global_var, global_twar = 3;
 
@@ -83,16 +85,25 @@ int dup(int n) {
 
 int main() {
    int num;
-   num = 5;
-   if (1) {
-      num = dup(num);
-   } else {
-      num = 3;
-      num += 1;
-   }
+   num = 0;
+   int i;
 
+   for (i = 0; i < 5; i++)
+      num = dup(num);
 
    return 0;
 }</textarea>
+      <div style="padding:1em">
+         <input type="range" name="step" id="stepper" min="1" max="1" value="1">
+         <div id="whatsgoingon"></div>
+      </div>
+      <div id="ast">
+
+      </div>
+      <div id="controls_wrapper">
+         <a href="#" onclick="uiStep();">Step</a>
+         <div id="controls">
+         </div>
+      </div>
    </body>
 </html>

@@ -207,15 +207,36 @@ evalNode["CConst"] = function(node, state) {
 };
 evalNode["CUnary"] = function(node, state) {
    var val = eval(node["expr"], state);
+   var v = val.val;
    var ret;
 
-   switch (node["op"]) {
-      case "CNegOp":
-         ret = -val.val;
-         break;
+   var remove = false;
+
+   if (_.isString(v)) // this is a variable of some kind
+      addr = varLookup(v, state.stack);
+   else { // you can do eg 1++ which shouldn't actually store anywhere, just temporary
+      remove = true;
+      state.heap[-1] = v;
+      addr = -1;
    }
 
-   return {val: val.val, state: val.state};
+   var ops = {};
+   ops["CPreIncOp"] = function(u) { state.heap[addr] = u + 1; return u + 1; }
+   ops["CPreDecOp"] = function(u) { state.heap[addr] = u - 1; return u - 1; }
+   ops["CPostIncOp"] = function(u) { state.heap[addr] = u + 1; return u; }
+   ops["CPostDecOp"] = function(u) { state.heap[addr] = u - 1; return u; }
+   ops["CAdrOp"] = function(u) { return addr; }
+   ops["CIndOp"] = function(u) { return state.heap[addr]; }
+   ops["CPlusOp"] = function(u) { return u; } // TODO ignoring these two for now because unary +?
+   ops["CMinOp"] = function(u) { return u; }
+   ops["CCompOp"] = function(u) { return ~u; }
+   ops["CNegOp"] = function(u) { return -u; }
+
+   if (remove) {
+      delete state.heap[-1];
+   }
+
+   return {val: ret, state: val.state};
 };
 evalNode["CBinary"] = function(node, state) {
    var erand1 = eval(node["erand1"], state),
@@ -303,8 +324,8 @@ evalNode["CCall"] = function(node, state) {
 //TODO not sure about handling vars on lhs vs associating them
 evalNode["CAssign"] = function(node, state) {
    var vals = sequenceEval([ node["lvalue"], node["rvalue"] ], state);
-   var name = vals.val[0];
-   var rhs = vals.val[1];
+   var name = vals.vals[0];
+   var rhs = vals.vals[1];
    state = vals.state;
    
    // Switch on assign ops
@@ -321,9 +342,12 @@ evalNode["CAssign"] = function(node, state) {
    ops["COrAssOp"] = function(l,r) { return l | r; };
    ops["CXorAssOp"] = function(l,r) { return l ^ r; };
 
-   var op = ops[node["ops"]];
-   var val = op(state.heap[name], rhs);
-   state.heap[name] = val;
+   var op = ops[node["op"]];
+
+   var addr = varLookup(name, state.stack);
+   var val = op(state.heap[addr], rhs);
+   state.heap[addr] = val;
+
    return {val: val, state: state};
 };
 

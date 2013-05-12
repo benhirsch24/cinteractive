@@ -70,14 +70,26 @@ textarea:focus{
    min-height: 300px;
 }
 
-#controls {
+#controls_wrapper {
    position:absolute;
    z-index:9999;
-   top: 3%;
+   top: 75px;
    right: 3%;
    padding: 1em;
    background-color:#fff;
    border: 1px solid #aaa;
+}
+
+.var_row {
+
+}
+
+.frame_top {
+   border-top: 1px solid #ccc;
+}
+
+.frame_bottom {
+   border-bottom: 1px solid #ccc;
 }
 
 #heap {
@@ -111,4 +123,8 @@ textarea:focus{
    color: #000;
    background-color:#FFFAAD;
    padding: 3px;
+}
+
+#whatsgoingon {
+   padding: 1em;
 }

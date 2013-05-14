@@ -84,6 +84,10 @@ textarea:focus{
 
 }
 
+.var_row:hover {
+   background-color:#eee;
+}
+
 .frame_top {
    border-top: 1px solid #ccc;
 }
@@ -92,12 +96,20 @@ textarea:focus{
    border-bottom: 1px solid #ccc;
 }
 
-#heap {
+#heapory {
 
+}
+
+.heap_info_button {
+   padding: .3em;
 }
 
 .heap_row {
 
+}
+
+.hover_heap_row {
+   background-color:#FFFAAD;
 }
 
 .heap_loc {
@@ -105,7 +117,7 @@ textarea:focus{
 }
 
 .heap_node {
-
+   text-align:center;
 }
 
 .opts_menu {

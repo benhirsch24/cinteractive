@@ -38,7 +38,7 @@ instance ToJSON CExtDecl where
  - stmt is a compound statement (block) for function as AST ie Free Monad!
  -}
 instance ToJSON CFunDef where
-   toJSON (CFunDef declspecs declr decls stat inf) = object ["node" .= pack "CFunDef", "fun_def" .= toJSON declr, "declarations" .= map toJSON decls, "statements" .= toJSON stat, "line" .= nodeLine inf]
+   toJSON (CFunDef declspecs declr decls stat inf) = object ["node" .= pack "CFunDef", "specifiers" .= map toJSON declspecs, "fun_def" .= toJSON declr, "declarations" .= map toJSON decls, "statements" .= toJSON stat, "line" .= nodeLine inf]
 
 {--
  - CStatements and Exprs are both ASTs

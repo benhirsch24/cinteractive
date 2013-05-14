@@ -58,10 +58,37 @@ function ipprint(ast) {
    return pprint(ast, 0);
 }
 
-function ppMemValue(value) {
-   if (_.isObject(value) && value["node"] === "CFunDef") {
-      return "Function: " + unquotify(value["fun_def"]["name"]);
+function ppMemValue(value, info) {
+   var type = '';
+   if (!_.isUndefined(info)) {
+      var types = info['type'];
+   }
+
+   _.map(types, function(t) { type += t + ' '; });
+   if (_.isObject(value)) {
+      switch(value["node"]) {
+         case "CFunDef":
+            return "Function: " + unquotify(value["fun_def"]["name"]);
+      }
+   } else if (_.isArray(info)) {
+      _.map(info, function(i) {
+         switch(i["node"]) {
+            case "CArrDeclr":
+               var theType = '';
+               _.map(i['type'], function(t){ theType += t + ' '; });
+               type += 'Array of ' + i["length"] + " " + theType + 's ';
+               break;
+            case "CPtrDeclr":
+               type += ' pointer to ';
+               break;
+            case "CFunDeclr":
+               type += ' function returning ';
+               break;
+         }
+      });
+
+      return type;
    } else {
-      return value;
+      return value + ' :: ' + type;
    }
 }

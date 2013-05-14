@@ -9,6 +9,18 @@
  * 
  */
 
+var sizes = {};
+sizes["CVoidType"] = 1;
+sizes["CCharType"] = 1;
+sizes["CShortType"] = 2;
+sizes["CIntType"] = 4;
+sizes["CLongType"] = 4;
+sizes["CFloatType"] = 4;
+sizes["CDoubleType"] = 8;
+sizes["CSignedType"] = 2;
+sizes["CUnsigType"] = 4;
+sizes["CBoolType"] = 1;
+
 // Monadic plumbing, essentially: forM nodes eval
 function sequenceEval(nodes, state) {
    var vals = [];
@@ -61,11 +73,24 @@ function AddToCurFrame(name, value, state) {
    return state;
 }
 
-function evalLhs(lhs) {
+// returns an ADDRESS IN THE HEAP
+function evalLhs(lhs, state) {
+   var val = undefined;
+
    if (lhs["node"] === "CVar") {
-      return unquotify(lhs["name"]);
+      val = varLookup(unquotify(lhs["name"]), state.stack);
+   } else if (lhs["node"] === "CIndex") {
+      var index = eval(lhs["index"], state);
+      var array = eval(lhs["array"], index.state);
+      state = array.state;
+
+      var ind_addr = state.heap[varLookup(index.val, state.stack)];
+      var array_addr = varLookup(array.val, state.stack);
+
+      val = array_addr + ind_addr;
    }
-   return "";
+
+   return {val: val, state: state};
 }
 
 // TODO: rest of specifiers
@@ -300,6 +325,7 @@ evalNode["CCall"] = function(node, state) {
          var varname = argval.val;
          var addr = varLookup(varname, state.stack);
          argval.val = state.heap[addr];
+         state.heapinfo[addr] = state.heapinfo[fun_addr]['params'][varname];
       } else if (arg["node"] === "CConst") {
          argval = eval(arg["node"], state);
       }
@@ -323,10 +349,11 @@ evalNode["CCall"] = function(node, state) {
 };
 //TODO not sure about handling vars on lhs vs associating them
 evalNode["CAssign"] = function(node, state) {
-   var vals = sequenceEval([ node["lvalue"], node["rvalue"] ], state);
-   var name = vals.vals[0];
-   var rhs = vals.vals[1];
-   state = vals.state;
+   var lhs = evalLhs(node["lvalue"], state);
+   var rval = eval(node["rvalue"], lhs.state);
+   var addr = lhs.val;
+   var rhs = rval.val;
+   state = rval.state;
    
    // Switch on assign ops
    var ops = {};
@@ -344,7 +371,6 @@ evalNode["CAssign"] = function(node, state) {
 
    var op = ops[node["op"]];
 
-   var addr = varLookup(name, state.stack);
    var val = op(state.heap[addr], rhs);
    state.heap[addr] = val;
 
@@ -435,6 +461,8 @@ evalNode["CFloat"] = function(node, state) {
 
 function eval(node, state) {
    console.log(node["node"]);
+   if (_.isUndefined(evalNode[node["node"]]))
+      throw "evalNode " + node["node"] + " not defined.";
    return evalNode[node["node"]](node, state);
 }
 

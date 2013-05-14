@@ -69,27 +69,40 @@ function updateMemory(st) {
    heap.attr('id', 'heapory');
 
    var headings = $('<tr></tr>');
-   headings.html('<th>Location</th><th>Value</th>');
+   headings.html('<th></th><th>Location</th><th>Value</th>');
    heap.append(headings);
 
    _(st.heap).forIn(function(value, addr) {
-      var tr = $('<tr></tr>');
+      var tr = $('<tr data-addr=' + addr + '></tr>');
       tr.addClass('heap_row');
       
+      var hinf = $('<td></td>');
+      hinf.addClass('heap_info_button');
+      hinf.html('<a href="#"><i class="icon-plus"></i></a>');
       var loc = $('<td></td>');
       loc.addClass('heap_loc');
       var node = $('<td></td>');
       node.addClass('heap_node');
 
       loc.html(addr);
-      node.html(ppMemValue(value));
+      node.html(ppMemValue(value, st.heapinfo[addr]));
 
+      tr.append(hinf);
       tr.append(loc);
       tr.append(node);
       heap.append(tr);
    });
    
    controls.append(heap);
+
+   // on hover highlight stuff
+   $('.var_row').hover(function(e) {
+      var addr = $(e.currentTarget).children().last().text();
+      $('#heapory [data-addr=' + addr + ']').addClass('hover_heap_row');
+   }, function(e) {
+      var addr = $(e.currentTarget).children().last().text();
+      $('#heapory [data-addr=' + addr + ']').removeClass('hover_heap_row');
+   });
 }
 
 function receiveAST(data) {
@@ -108,16 +121,17 @@ function receiveAST(data) {
    updateMemory(glState);
 
    var st = {
-      stack: _(glState.stack).clone()
-    , heap:  _(glState.heap).clone()
-    , kont: _(glState.kont).clone() };
+      stack:    _.cloneDeep(glState.stack)
+    , heap:     _.cloneDeep(glState.heap)
+    , heapinfo: _.cloneDeep(glState.heapinfo)
+    , kont:     _.cloneDeep(glState.kont) };
    _(fullStepColl).push(st);
 
    var newstack = [{}];
    glState.stack = newstack.concat(glState.stack);
 
    glStep = 0;
-   //collectSteps();
+   collectSteps();
    glState.kont($('#whatsgoingon'), CM);
    CM.removeLineClass(currLine, 'wrap', 'active_line');
 }
@@ -185,9 +199,10 @@ function collectSteps() {
       uiStep();
       if (!done) {
          var st = {
-            stack: _(glState.stack).clone()
-          , heap:  _(glState.heap).clone()
-          , kont: _(glState.kont).clone() };
+            stack:    _.cloneDeep(glState.stack)
+          , heap:     _.cloneDeep(glState.heap)
+          , heapinfo: _.cloneDeep(glState.heapinfo)
+          , kont:     _.cloneDeep(glState.kont) };
          _(fullStepColl).push(st);
       }
    }

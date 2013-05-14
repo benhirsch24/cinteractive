@@ -3,3 +3,4 @@
 *.o
 Server
 *.swp
+tests/

@@ -9,6 +9,52 @@
  * 
  */
 
+var assops = {};
+assops["CAssignOp"] = function(l, r) { return r; };
+assops["CMulAssOp"] = function(l, r) { return l * r; }
+assops["CDivAssOp"] = function(l, r) { return l / r; }
+assops["CRemAssOp"] = function(l,r) { return l % r; };
+assops["CAddAssOp"] = function(l,r) { return l + r; };
+assops["CSubAssOp"] = function(l,r) { return l - r; };
+assops["CShlAssOp"] = function(l,r) { return l * 2 * r; };
+assops["CShrAssOp"] = function(l,r) { return l / 2 * r; };
+assops["CAndAssOp"] = function(l,r) { return l & r; };
+assops["COrAssOp"] = function(l,r) { return l | r; };
+assops["CXorAssOp"] = function(l,r) { return l ^ r; };
+
+var binops = {};
+binops["CMulOp"] = function(l, r) { return l * r; }
+binops["CDivOp"] = function(l, r) { return l / r; }
+binops["CRmdOp"] = function(l,r) { return l % r; };
+binops["CAddOp"] = function(l,r) { return l + r; };
+binops["CSubOp"] = function(l,r) { return l - r; };
+binops["CShlOp"] = function(l,r) { return l * 2 * r; };
+binops["CShrOp"] = function(l,r) { return l / 2 * r; };
+binops["CAndOp"] = function(l,r) { return l & r; };
+binops["COrAssOp"] = function(l,r) { return l | r; };
+binops["CXorAssOp"] = function(l,r) { return l ^ r; };
+binops["CLndOp"] = function(l,r) { return l && r; };
+binops["CLorOp"] = function(l,r) { return l || r; };
+binops["CLeOp"] = function(l,r) { return l < r; };
+binops["CGrOp"] = function(l,r) { return l > r; };
+binops["CLeqOp"] = function(l,r) { return l <= r; };
+binops["CGeqOp"] = function(l,r) { return l >= r; };
+binops["CEqOp"] = function(l,r) { return l === r; };
+binops["CNeqOp"] = function(l,r) { return l !== r; };
+
+var unops = {};
+unops["CPreIncOp"] = function(addr, heap) { heap[addr] = heap[addr] + 1; return heap[addr] + 1; }
+unops["CPreDecOp"] = function(addr, heap) { heap[addr] = heap[addr] - 1; return heap[addr] - 1; }
+unops["CPostIncOp"] = function(addr, heap) { var u = heap[addr]; heap[addr] = u + 1; return u; }
+unops["CPostDecOp"] = function(addr, heap) { var u = heap[addr]; heap[addr] = u - 1; return u; }
+unops["CAdrOp"] = function(addr, heap) { return addr; }
+unops["CIndOp"] = function(addr, heap) { return heap[addr]; }
+unops["CPlusOp"] = function(addr, heap) { return heap[addr]; } // TODO ignoring these two for now because what is unary +?
+unops["CMinOp"] = function(addr, heap) { return heap[addr]; }
+unops["CCompOp"] = function(addr, heap) { return ~heap[addr]; }
+unops["CNegOp"] = function(addr, heap) { return -heap[addr]; }
+
+
 var sizes = {};
 sizes["CVoidType"] = 1;
 sizes["CCharType"] = 1;
@@ -245,18 +291,6 @@ evalNode["CUnary"] = function(node, state) {
       addr = -1;
    }
 
-   var ops = {};
-   ops["CPreIncOp"] = function(u) { state.heap[addr] = u + 1; return u + 1; }
-   ops["CPreDecOp"] = function(u) { state.heap[addr] = u - 1; return u - 1; }
-   ops["CPostIncOp"] = function(u) { state.heap[addr] = u + 1; return u; }
-   ops["CPostDecOp"] = function(u) { state.heap[addr] = u - 1; return u; }
-   ops["CAdrOp"] = function(u) { return addr; }
-   ops["CIndOp"] = function(u) { return state.heap[addr]; }
-   ops["CPlusOp"] = function(u) { return u; } // TODO ignoring these two for now because unary +?
-   ops["CMinOp"] = function(u) { return u; }
-   ops["CCompOp"] = function(u) { return ~u; }
-   ops["CNegOp"] = function(u) { return -u; }
-
    if (remove) {
       delete state.heap[-1];
    }
@@ -273,27 +307,7 @@ evalNode["CBinary"] = function(node, state) {
    if (_(erand2.val).isString())
       erand2.val = state.heap[varLookup(erand2.val, state.stack)];
 
-   var ops = {};
-   ops["CMulOp"] = function(l, r) { return l * r; }
-   ops["CDivOp"] = function(l, r) { return l / r; }
-   ops["CRmdOp"] = function(l,r) { return l % r; };
-   ops["CAddOp"] = function(l,r) { return l + r; };
-   ops["CSubOp"] = function(l,r) { return l - r; };
-   ops["CShlOp"] = function(l,r) { return l * 2 * r; };
-   ops["CShrOp"] = function(l,r) { return l / 2 * r; };
-   ops["CAndOp"] = function(l,r) { return l & r; };
-   ops["COrAssOp"] = function(l,r) { return l | r; };
-   ops["CXorAssOp"] = function(l,r) { return l ^ r; };
-   ops["CLndOp"] = function(l,r) { return l && r; };
-   ops["CLorOp"] = function(l,r) { return l || r; };
-   ops["CLeOp"] = function(l,r) { return l < r; };
-   ops["CGrOp"] = function(l,r) { return l > r; };
-   ops["CLeqOp"] = function(l,r) { return l <= r; };
-   ops["CGeqOp"] = function(l,r) { return l >= r; };
-   ops["CEqOp"] = function(l,r) { return l === r; };
-   ops["CNeqOp"] = function(l,r) { return l !== r; };
-
-   var val = ops[node["op"]](erand1.val, erand2.val);
+   var val = binops[node["op"]](erand1.val, erand2.val);
 
    return {val: val, state: erand2.state};
 };
@@ -305,7 +319,7 @@ evalNode["CCall"] = function(node, state) {
 
    console.log("Calling " + fun_name);
    // functions should be defined in globals which is last stack frame
-   fun_addr = _(state.stack).last()[fun_name];
+   fun_addr = varLookup(fun_name, state.stack);
    if (_(fun_addr).isUndefined()) {
       console.log("No function defined");
       state.kont = function(ui) {
@@ -325,7 +339,6 @@ evalNode["CCall"] = function(node, state) {
          var varname = argval.val;
          var addr = varLookup(varname, state.stack);
          argval.val = state.heap[addr];
-         state.heapinfo[addr] = state.heapinfo[fun_addr]['params'][varname];
       } else if (arg["node"] === "CConst") {
          argval = eval(arg["node"], state);
       }
@@ -345,9 +358,9 @@ evalNode["CCall"] = function(node, state) {
    state.kont = function(ui) {
       ui.html('About to call ' + fun_name);
    };
-   return {val: fun.val, state: state};
+   return { val: fun.val, state: state };
 };
-//TODO not sure about handling vars on lhs vs associating them
+
 evalNode["CAssign"] = function(node, state) {
    var lhs = evalLhs(node["lvalue"], state);
    var rval = eval(node["rvalue"], lhs.state);
@@ -466,4 +479,46 @@ function eval(node, state) {
    return evalNode[node["node"]](node, state);
 }
 
+function isThunk(node) {
+   return node["node"] === "CThunk";
+}
 
+function isFunction(node) {
+   return node["node"] === "CFunDef";
+}
+
+function evalOrthunkLhs(node, state, hole) {
+
+}
+
+function evalOrThunk(node, state, hole, thunker) {
+   if (!_.isUndefined(thunker["thunk"]) && thunker["thunk"] === "filled") {
+      console.log("returning from thunk");
+      return {val: thunker[hole], state: state};
+   }
+
+   var enode = eval(node, state);
+
+   console.log("ENODE");
+   console.log(enode);
+   // not a var, not a func
+   if (_.isUndefined(enode.val["node"]) || !isFunction(enode.val))
+      return enode;
+
+   state = enode.state;
+
+   console.log("creating thunk");
+   var newNode = {};
+   newNode["node"] = "CThunk";
+   newNode["eval"] = _.cloneDeep(thunker);
+   newNode["thunk"] = hole;
+   newNode["line"] = node["line"];
+   newNode[hole] = {};
+   _(state.dump).last().unshift(newNode);
+   _(state.dump).push([enode.val]);
+   state.kont = function(ui, cm) {
+      ui.html('Created thunk on assign');
+      hilite_line(newNode["line"], cm);
+   }
+   return {val: newNode, state: state};
+};

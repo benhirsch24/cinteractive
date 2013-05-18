@@ -118,7 +118,6 @@ function receiveAST(data) {
    }
 
    glState = compile(data);
-   updateMemory(glState);
 
    var st = {
       stack:    _.cloneDeep(glState.stack)
@@ -131,9 +130,10 @@ function receiveAST(data) {
    glState.stack = newstack.concat(glState.stack);
 
    glStep = 0;
-   collectSteps();
+   //collectSteps();
    glState.kont($('#whatsgoingon'), CM);
    CM.removeLineClass(currLine, 'wrap', 'active_line');
+   updateMemory(glState);
 }
 
 function enlarge() { $('#source').addClass('enlarge'); }
@@ -172,6 +172,7 @@ function uiStep() {
       glState.control = _(glState.dump).last().shift();
    }
 
+   console.log(glState.control.node);
    glState = step[glState.control["node"]](glState);
    updateMemory(glState);
    glState.kont($('#whatsgoingon'), CM);
@@ -210,6 +211,7 @@ function collectSteps() {
    $('#steps_collected').html('Steps collected!');
    $('#stepper').prop('min', 0);
    $('#stepper').prop('max', fullStepColl.length - 1);
+   $('#stepper').val(0);
    $('#stepper').change(function() {
       var step = $('#stepper').val();
       var state = fullStepColl[step];

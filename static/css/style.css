@@ -66,8 +66,7 @@ textarea:focus{
    clear: both;
    padding: .5em;
    border: 0;
-   min-width: 700px;
-   min-height: 300px;
+   width: 100em;
 }
 
 #controls_wrapper {

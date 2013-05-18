@@ -36,16 +36,17 @@ function compile(ast) {
    };
 }
 
-// TODO: rest of specifiers
 function evalSpecifiers(specs, state) {
-   var type = '';
-
-   return _.map(specs, function(s) { return s['spec']['node']; });
+   var types = _.map(specs, function(s) { return s['spec']['node']; });
+   console.log("evaling specifiers");
+   console.log(types);
+   return types;
 }
 
 
 function push_params(state) {
    var top_addr = state.next - 1;
+   console.log("Pushing params");
 
    // chain on the params of the function
    // for each CDecl, find the type specifiers and if there's multiple decls
@@ -55,12 +56,17 @@ function push_params(state) {
    // since the CCall pushed the args into a new stack frame on the heap already
    _(state.control["fun_def"]["attrs"][0]["params"]).map(function(p) {
       var type = evalSpecifiers(p["specifiers"], state);
-      var decls = _(p.declarations).map(function(decl) {
-         return unquotify(decl["declarator"]["name"]);
+      var decls = _.map(p.declarations, function(decl) {
+         var d = decl;
+         d["type"] = type;
+         return d;
       });
       return decls;
    }).flatten().reverse().map(function(decl) {
-      state.stack[0][decl] = top_addr;
+      var name = unquotify(decl["declarator"]["name"]);
+      var type = decl["type"];
+      state.stack[0][name] = top_addr;
+      state.heapinfo[top_addr] = {'node': 'CDecl', type: type};
       top_addr -= 1;
    });
 }
@@ -69,8 +75,8 @@ var step = {};
 step["CThunk"] = function(state) {
    var node = state.control["eval"];
    var line = state.control["line"];
-   node["thunk"] = state.control["thunk"];
-   node[state.control["thunk"]] = {val: state.ret, state: state};
+   node["thunk"] = "filled";
+   node[state.control["thunk"]] = state.ret;
    state.kont = function(ui, cm) {
       ui.html('Executing thunk, filling hole ' + node["thunk"]);
       hilite_line(line, cm);
@@ -128,6 +134,7 @@ step["CDecl"] = function(state) {
                var size = eval(a["size"]["size"], state);
                state = size.state;
                ret["length"] = size.val;
+               console.log(type);
                ret["size"] = ret["length"] * sizes[type[0]];
                ret["type"] = type;
                arr_len += ret["length"];
@@ -184,24 +191,28 @@ step["CUnary"] = function(state) {
       addr = -1;
    }
 
-   var ops = {};
-   ops["CPreIncOp"] = function(u) { msg = 'Pre-incrementing ' + v; state.heap[addr] = u + 1; return u + 1; }
-   ops["CPreDecOp"] = function(u) { msg = 'Pre-decrementing ' + v; state.heap[addr] = u - 1; return u - 1; }
-   ops["CPostIncOp"] = function(u) { msg = 'Post-incrementing ' + v + ', this takes place after the stmt'; state.heap[addr] = u + 1; return u; }
-   ops["CPostDecOp"] = function(u) { msg = 'Post-decrementing ' + v + ', this takes place after the stmt'; state.heap[addr] = u - 1; return u; }
-   ops["CAdrOp"] = function(u) { msg = 'Returning address of ' + v; return addr; }
-   ops["CIndOp"] = function(u) { msg = 'Returing where ' + v + ' points to.'; return state.heap[addr]; }
-   ops["CPlusOp"] = function(u) { return u; } // TODO ignoring these two for now because unary +?
-   ops["CMinOp"] = function(u) { return u; }
-   ops["CCompOp"] = function(u) { msg = "Returning one's complement of " + v; return ~u; }
-   ops["CNegOp"] = function(u) { msg = "Returing negation of " + v; return -u; }
-
    if (remove) {
       delete state.heap[-1];
    }
 
-   var op = ops[state.control["op"]];
-   var ret = op(state.heap[addr]);
+   var op = unops[state.control["op"]];
+   var ret = op(addr, state.heap);
+
+   var unmsgs = {};
+   unmsgs["CPreIncOp"] = 'Pre-incrementing ' + v;
+   unmsgs["CPreDecOp"] = 'Pre-decrementing ' + v;
+   unmsgs["CPostIncOp"] = 'Post-incrementing ' + v + ', this takes place after the stmt';
+   unmsgs["CPostDecOp"] = 'Post-decrementing ' + v + ', this takes place after the stmt';
+   unmsgs["CAdrOp"] = 'Returning address of ' + v;
+   unmsgs["CIndOp"] = 'Returing where ' + v + ' points to.';
+   //unmsgs["CPlusOp"] = function(u) { return u; } // TODO ignoring these two for now because unary +?
+   //unmsgs["CMinOp"] = function(u) { return u; }
+   unmsgs["CCompOp"] = "Returning one's complement of " + v;
+   unmsgs["CNegOp"] = "Returing negation of " + v;
+   var msg = unmsgs[state.control["op"]];
+
+   // TODO: haven't used val yet?
+   var val = ret.val;
 
    state.kont = function(ui, cm) {
       hilite_line(line, cm);
@@ -214,54 +225,21 @@ step["CExpr"] = function(state) {
    return step[state.control["node"]](state);
 };
 step["CAssign"] = function(state) {
-   var control = _(state.control).cloneDeep();
-   var line = control['line'];
+   var control = _.cloneDeep(state.control);
+   var line = state.control['line'];
 
-   if (_(state.control["thunk"]).isUndefined()) {
-      var rvalue = eval(state.control["rvalue"], state);
-   } else {
-      rvalue = state.control["rvalue"];
-      rvalue.state = state;
-   }
-   state = rvalue.state;
-
-   // if the rvalue is a function (ie var = functionCall()) then put a thunk
-   // where this node was on the dump
-   if (_(rvalue.val).isObject() && rvalue.val["node"] === "CFunDef") {
-      var newNode = {};
-      newNode["node"] = "CThunk";
-      newNode["eval"] = control;
-      newNode["thunk"] = "rvalue";
-      newNode["line"] = line;
-      newNode["rvalue"] = {};
-      _(state.dump).last().unshift(newNode);
-      _(state.dump).push([rvalue.val]);
-      state.kont = function(ui, cm) {
-         ui.html('Created thunk on assign');
-         hilite_line(line, cm);
-      }
+   var rvalue = evalOrThunk(state.control["rvalue"], state, "rvalue", state.control);
+   if (_.isObject(rvalue.val) && !_.isUndefined(rvalue.val["node"]) && isThunk(rvalue.val)) {
       return state;
    }
+   state = rvalue.state;
 
    var lvalue = evalLhs(state.control["lvalue"], state);
    state = lvalue.state;
 
-
    // Switch on assign ops
-   var ops = {};
-   ops["CAssignOp"] = function(l, r) { return r; };
-   ops["CMulAssOp"] = function(l, r) { return l * r; }
-   ops["CDivAssOp"] = function(l, r) { return l / r; }
-   ops["CRemAssOp"] = function(l,r) { return l % r; };
-   ops["CAddAssOp"] = function(l,r) { return l + r; };
-   ops["CSubAssOp"] = function(l,r) { return l - r; };
-   ops["CShlAssOp"] = function(l,r) { return l * 2 * r; };
-   ops["CShrAssOp"] = function(l,r) { return l / 2 * r; };
-   ops["CAndAssOp"] = function(l,r) { return l & r; };
-   ops["COrAssOp"] = function(l,r) { return l | r; };
-   ops["CXorAssOp"] = function(l,r) { return l ^ r; };
 
-   var op = ops[state.control["op"]];
+   var op = assops[state.control["op"]];
    var val = op(state.heap[lvalue.val], rvalue.val);
 
    state.control = undefined;
@@ -318,6 +296,7 @@ step["CFor"] = function(state) {
       hilite_line(line, cm);
       ui.html(msg);
    };
+
    return state;
 };
 
@@ -374,6 +353,10 @@ step["CReturn"] = function(state) {
       ret.val = state.heap[varLookup(ret.val, state.stack)];
 
    state = ret.state;
+
+   console.log(_(state.stack[0]).keys().size());
+   var stacklen = _(state.stack[0]).keys().size();
+   state.next -= stacklen;
 
    _(state.stack[0]).forIn(function(addr, name) {
       delete state.heap[addr];
@@ -432,7 +415,7 @@ compileDecl["CDecl"] = function(node, state) {
       state = value.state;
       var name = unquotify(d['declarator']['name']);
       state.heap[state.next] = value.val;
-      state.heapinfo[state.next] = { 'type': _(node["specifiers"]).map('spec').map('node'), 'name': name, 'node': 'CDecl' };
+      state.heapinfo[state.next] = { 'type': _.map(node["specifiers"], function(s) { return s['spec']['node']; }), 'name': name, 'node': 'CDecl' };
       state.stack[0][name] = state.next;
       state.next += 1;
    });
@@ -442,6 +425,7 @@ compileDecl["CDecl"] = function(node, state) {
 
 compileDecl["CFunDef"] = function(node, state) {
    var name = unquotify(node["fun_def"]["name"]);
+   var fun_type = evalSpecifiers(node['specifiers'], state);
    state.heap[state.next] = node;
    state.stack[0][name] = state.next;
 
@@ -450,12 +434,12 @@ compileDecl["CFunDef"] = function(node, state) {
 
    var fun_params = {};
    var param_info = _.map(params, function(p) {
-      var type = _(node["specifiers"]).map('spec').map('node')
+      var type = evalSpecifiers(p['specifiers'], state);
       var name = unquotify(p['declarations'][0]['declarator']['name']);
-      fun_params[name] = type;
+      fun_params[name] = {'node': 'CDecl', type: type};
    });
 
-   state.heapinfo[state.next] = { 'type': _(node["specifiers"]).map('spec').map('node'), 'name': name, 'node': 'CFunDef', 'params': fun_params };
+   state.heapinfo[state.next] = { 'type': fun_type, 'name': name, 'node': 'CFunDef', 'params': fun_params };
 
    state.next += 1;
 

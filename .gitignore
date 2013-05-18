@@ -4,3 +4,4 @@
 Server
 *.swp
 tests/
+clojure-interp/

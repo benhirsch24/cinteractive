@@ -58,25 +58,60 @@ function ipprint(ast) {
    return pprint(ast, 0);
 }
 
+function ppType(types, v) {
+   var type = '';
+   var ts = _.isArray(types) ? types : types.valueOf();
+
+   var show_type = {};
+   show_type["CVoidType"] = "void";
+   show_type["CCharType"] = "char";
+   show_type["CShortType"] = "short";
+   show_type["CIntType"] = "int";
+   show_type["CLongType"] = "long";
+   show_type["CFloatType"] = "float";
+   show_type["CDoubleType"] = "double";
+   show_type["CSignedType"] = "signed";
+   show_type["CUnsigType"] = "unsigned";
+   show_type["CBoolType"] = "bool";
+
+   _.map(ts, function(t) {
+         type += show_type[t] + ' ';
+   });
+   return type;
+}
+
+function ppParams(params) {
+   var ret = '';
+
+   _.forIn(params, function(info, name) {
+      ret += ppType(info['type']) + ' ' + name + ', ';
+   });
+
+   ret = ret.slice(0, ret.length - 2);
+   return ret;
+}
+
 function ppMemValue(value, info) {
    var type = '';
-   if (!_.isUndefined(info)) {
-      var types = info['type'];
+   if (!_.isUndefined(info) && !_.isUndefined(info["type"])) {
+      type = ppType(info['type'], value);
    }
 
-   _.map(types, function(t) { type += t + ' '; });
    if (_.isObject(value)) {
       switch(value["node"]) {
          case "CFunDef":
-            return "Function: " + unquotify(value["fun_def"]["name"]);
+            return unquotify(value["fun_def"]["name"]) + " :: Function (" + ppParams(info['params']) + ")";
+         case "CDecl":
+            return info["name"] + " :: " + type;
       }
    } else if (_.isArray(info)) {
       _.map(info, function(i) {
+         var t = ppType(i['type']);
          switch(i["node"]) {
             case "CArrDeclr":
-               var theType = '';
-               _.map(i['type'], function(t){ theType += t + ' '; });
-               type += 'Array of ' + i["length"] + " " + theType + 's ';
+               //var theType = '';
+               //_.map(i['type'], function(t){ theType += t + ' '; });
+               type += 'Array of ' + i["length"] + " " + t + 's ';
                break;
             case "CPtrDeclr":
                type += ' pointer to ';

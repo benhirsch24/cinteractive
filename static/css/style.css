@@ -1,10 +1,3 @@
-* { 
-  margin:0; padding: 0; 
-}
-
-body {
-}
-
 textarea{
    width:400px;
 
@@ -62,11 +55,37 @@ textarea:focus{
    margin-bottom: .5em;
 }
 
+.content {
+}
+
 #code {
    clear: both;
    padding: .5em;
    border: 0;
    width: 100em;
+}
+
+#frame_container {
+
+}
+
+#frames_header {
+}
+
+#frames {
+   list-style:none;
+}
+
+.frame {
+
+}
+
+.frame .array {
+   display:none;
+}
+
+.frame_var .var_addr {
+   width: 10px;
 }
 
 #controls_wrapper {
@@ -138,4 +157,9 @@ textarea:focus{
 
 #whatsgoingon {
    padding: 1em;
+}
+
+#stepper {
+   width: 100%;
+   max-width: 500px;
 }

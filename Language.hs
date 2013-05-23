@@ -4,6 +4,7 @@ import Language.C
 import Language.C.System.GCC
 import Data.Aeson
 import Data.Text (Text, pack, unpack)
+import Data.Maybe (maybeToList)
 import qualified Data.ByteString.UTF8 as BS
 
 nodeLine :: NodeInfo -> Int
@@ -141,11 +142,14 @@ instance ToJSON CTypeSpec where
    toJSON (CTypeOfType tipe inf) = object ["node" .= pack "CTypeOfType", "type" .= toJSON tipe, "line" .= nodeLine inf]
 
 instance ToJSON CStructUnion where
-   toJSON (CStruct CStructTag ident fields attrs inf) = object $ ["node" .= pack "CStruct", "ident" .= pshow ident, "line" .= nodeLine inf] ++ maybeJSON fields
-   toJSON (CStruct CUnionTag ident fields attrs inf) = object $ ["node" .= pack "CUnion", "ident" .= pshow ident, "line" .= nodeLine inf] ++ maybeJSON fields
+   toJSON (CStruct CStructTag ident fields attrs inf) = object $ ["node" .= pack "CStruct", "ident" .= maybeIdentToJSON ident, "line" .= nodeLine inf] ++ maybeJSON fields
+   toJSON (CStruct CUnionTag ident fields attrs inf) = object $ ["node" .= pack "CUnion", "ident" .= maybeIdentToJSON ident, "line" .= nodeLine inf] ++ maybeJSON fields
 
 maybeJSON Nothing = ["fields" .= pack "Null"]
 maybeJSON (Just decls) = ["fields" .= map toJSON decls]
+
+maybeIdentToJSON Nothing = pack ""
+maybeIdentToJSON (Just ident) = pshow ident
 
 {--
  - CEnum identifier enumerator-list attrs represent as enum specifier
@@ -236,7 +240,7 @@ instance ToJSON CExpr where
    toJSON (CComplexImag imag inf) = object ["node" .= pack "CComplexImag", "imag" .= toJSON imag, "line" .= nodeLine inf]
    toJSON (CIndex array index inf) = object ["node" .= pack "CIndex", "array" .= toJSON array, "index" .= toJSON index, "line" .= nodeLine inf]
    toJSON (CCall fun args inf) = object ["node" .= pack "CCall", "function" .= toJSON fun, "args" .= map toJSON args, "line" .= nodeLine inf]
-   toJSON (CMember struct name deref inf) = object ["node" .= pack "CMember", "name" .= pshow name, "struct" .= toJSON struct, "deref?" .= toJSON deref, "line" .= nodeLine inf]
+   toJSON (CMember struct name deref inf) = object ["node" .= pack "CMember", "member" .= pshow name, "struct" .= toJSON struct, "deref?" .= toJSON deref, "line" .= nodeLine inf]
    toJSON (CVar ident inf) = object ["node" .= pack "CVar", "name" .= pshow ident, "line" .= nodeLine inf]
    toJSON (CConst const) = object ["node" .= pack "CConst", "const" .= toJSON const]
    toJSON (CCompoundLit decl initl inf) = object ["node" .= pack "CCompoundLit", "decl" .= toJSON decl, "init-list" .= map toJSON initl, "line" .= nodeLine inf]

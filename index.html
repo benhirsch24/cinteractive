@@ -3,50 +3,64 @@
    <head>
       <meta http-equiv="content-type" content="text/html; charset=utf-8">
       <title>C Interactive Interpreter</title>
-      <link href="static/css/smoothness/jquery-ui-1.10.2.custom.css" rel="stylesheet">
       <script type="text/javascript" src="static/js/jquery-1.9.1.js"></script>
-      <script src="static/js/jquery-ui-1.10.2.custom.js"></script>
-      <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/lodash.js/1.2.0/lodash.js"></script>
-      <script type="text/javascript" src="static/js/interp/prettyprint.js"></script>
-      <script type="text/javascript" src="static/js/interp/interpreter.js"></script>
-      <script type="text/javascript" src="static/js/interp/stepper.js"></script>
+      <script type="text/javascript" src="static/js/bootstrap-tooltip.js"></script>
+      <script type="text/javascript" src="static/js/lodash.js"></script>
+      <script type="text/javascript" src="static/js/handlebars.js"></script>
+
       <script type="text/javascript" src="static/js/codemirror.js"></script>
-      <!--<link href="static/css/bootstrap.css" rel="stylesheet">-->
+      <script src="static/js/clike/clike.js"></script>
+      <script src="static/js/addon/edit/closebrackets.js"></script>
+
+      <script>
+         var a = {};
+      </script>
+      <script data-main="static/js/main.js" src="static/js/require.js"></script>
+
       <link rel="stylesheet" href="static/css/style.css">
       <link rel="stylesheet" href="static/css/codemirror.css">
-      <script src="static/js/clike/clike.js"></script>
-      <script src="static/js/interp/driver.js"></script>
-      <!-- TODO: really should learn a module system or something for the javascript -->
-      <script>
-         $(document).ready(function() {
-            var myCodeMirror = CodeMirror.fromTextArea(document.getElementById("code"));
-            $('#step').click(uiStep);
-            $('#collectsteps').click(collectSteps);
-            $('#code').focus();
-            $("#compile").click(function() {
-               $('#functions').empty();
-               $('#source').empty();
-               $.post('http://localhost:3000/parse', $('#code').val())
-               .success(receiveAST)
-               .error(function(err) { $('#functions').html(err)});
-               return false;
-            });
-         });
-      </script>
+      <link rel="stylesheet" href="static/css/theme/neat.css">
+      <link href="static/css/bootstrap.css" rel="stylesheet">
+      <style>
+         .CodeMirror {
+            border: 1px solid #ddd;
+            height: auto;
+            width: 50em;
+         }
+      </style>
    </head>
    <body>
-      <div class="container">
-         <button id="compile">Compile</button>
-         <div id="topbar">
-            <ul id="toplinks">
-               <li><a href="#" id="compile">Compile</a></li>
+      <div class="navbar navbar-inverse">
+         <div class="navbar-inner">
+            <a class="brand" href="#">C Interactive Interpreter</a>
+            <ul class="nav">
+               <li class="active"><a href="#" id="compile">Compile!</a></li>
+               <li class="collected"><a href="#">No Data</a></li>
+               <li><a id="step" href="#">Step</a></li>
+               <li><a id="state" href="#">Log State</a></li>
+               <li><a id="give" href="#">Give State</a></li>
+               <li><a id="scoll" href="#">Log StepColl</a></li>
+            </ul>
+            <ul class="nav pull-right">
+               <li class="active"><a href="#" id="options">Options</a></li>
             </ul>
          </div>
-         <div class="codecontainer">
-            <div class="line-nums">
-
-            </div>
-<textarea id="code">
+      </div>
+      <div class="opts_menu row">
+         <div class="span4">
+            <label for="autoclosebrackets">Auto Close Brackets
+               <input type="checkbox" checked="checked" id="autoclose" name="autoclosebrackets">
+            </label>
+            <label for="tooltips">Enable/Disable Tooltips
+               <input type="checkbox" checked="checked" id="tooltips" name="tooltips">
+            </label>
+         </div>
+      </div>
+      <br>
+      <div class="row-fluid content">
+         <div class="span6">
+            <div class="alert alert-error" style="display:none;"></div>
+      <textarea id="code">
 unsigned int global_var, global_twar = 3;
 
 int dup(int n) {
@@ -54,76 +68,52 @@ int dup(int n) {
    return n;
 }
 
+struct point {
+   int x;
+   int y;
+};
+
 int main() {
    int num;
-   num = 5;
-   if (1) {
-      num = dup(num);
-   } else {
-      num = 3;
-      num += 1;
-   }
+   int array[10];
+   struct point myPoint;
 
+   int i;
+
+   for (i = 0; i < 5; i++) {
+      array[i] = dup(i);
+      myPoint.x = array[i];
+   }
 
    return 0;
 }</textarea>
+         <div style="padding:1em">
+            <input type="range" name="step" id="stepper" min="1" max="1" value="1">
+            <div id="whatsgoingon"></div>
          </div>
-         <div id="controls">
-            <div id="steps">
-               <div id="steps_collected"></div>
-               <a href="#" id="step">Step</a>
-               <a href="#" id="collectsteps">Collect Steps</a>
-               <div id="whatsgoingon"></div>
-               <br>
-               <input type="range" name="step" id="stepper" min="1" max="10" value="0">
-            </div>
-            <ul id="functions">
-            </ul>
-         </div>
-
-         <br style="clear: both;">
       </div>
-      <table id="stack">
-         <tr>
-            <th>Variable Name</th>
-            <th>Memory Location</th>
-         </tr>
-      </table>
-      <div id="memory-container">
-         <h2>Memory</h2>
-         <ul id="memory">
+
+      <div class="span3" id="frames_container">
+         <h4 style="text-align:center;" id="function_frames" data-toggle='tooltip'>Function Frames</h4>
+         <ul id="frames">
          </ul>
       </div>
-      <br>
-      <div id="source">
+
+      <div class="span3" id="mem">
+         <h4 data-toggle="tooltip" style="text-align:center">Memory</h4>
+         <table class="table table-bordered" id="heap">
+            <thead>
+               <tr>
+                  <th>Entry</th>
+                  <th>Value</th>
+               </tr>
+            </thead>
+            <tbody>
+            </tbody>
+         </table>
       </div>
-      <!--
-      <script type="text/javascript" src="static/js/behave.js"></script>
-      <script type="text/javascript">
-         var lineNumberFunc = function(data) {
-            var numLines = data.lines.total,
-               house = $('.line-nums'),
-               html = '',
-               i;
-
-            for (i = 0; i < numLines; i++) {
-               html += '<div>' + (i + 1) + '</div>';
-            }
-
-            house.html(html);
-         };
-         BehaveHooks.add(['init-after', 'keydown'], lineNumberFunc);
-
-         var editor = new Behave({
-            textarea: document.getElementById('code'),
-            replaceTab: true,
-            softTabs: true,
-            tabSize: 3,
-            autoStrip: true,
-            overwrite: true,
-            autoOpen: true,
-            autoIndent: true
-         });
-      </script> -->
+   </div>
+      <div id="ast">
+      </div>
    </body>
 </html>

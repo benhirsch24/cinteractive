@@ -3,7 +3,7 @@
 
 name:                cinteractive
 version:             0.1.0.0
-synopsis:            An interactive C interpreter.
+synopsis:            Interactive C Interpreter
 -- description:         
 homepage:            http://github.com/benhirsch24/cinteractive
 -- license:             
@@ -11,7 +11,7 @@ license-file:        LICENSE
 author:              Ben Hirsch
 maintainer:          benhirsch24@gmail.com
 -- copyright:           
-category:            Web
+-- category:            
 build-type:          Simple
 cabal-version:       >=1.8
 

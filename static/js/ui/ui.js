@@ -23,17 +23,6 @@ define(["interp/stepper", "ui/prettyprint"], function(stepper, prettyprint) { re
 
       $('#heap tbody').empty();
       $('#heap tbody').html(prettyprint.ppHeap(state));
-
-      // on hover highlight stuff
-      /*
-      $('.var_row').hover(function(e) {
-         var addr = $(e.currentTarget).children().last().text();
-         $('#heapory [data-addr=' + addr + ']').addClass('hover_heap_row');
-      }, function(e) {
-         var addr = $(e.currentTarget).children().last().text();
-         $('#heapory [data-addr=' + addr + ']').removeClass('hover_heap_row');
-      });
-      */
    }
 
    var uiStep = function(state) {
@@ -45,7 +34,7 @@ define(["interp/stepper", "ui/prettyprint"], function(stepper, prettyprint) { re
 
    var kont = {
       tell: function(msg) {
-         $('#whatsgoingon').html(msg);
+         $('#whatsgoingon').append(msg + '<br>');
       },
       hilite_line: function(line) {
          CM.removeLineClass(curLine, 'wrap', 'active_line');

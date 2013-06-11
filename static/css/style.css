@@ -155,6 +155,14 @@ textarea:focus{
    padding: 3px;
 }
 
+#buttons {
+   list-style:none;
+}
+
+#buttons li {
+   display: inline;
+}
+
 #whatsgoingon {
    padding: 1em;
 }

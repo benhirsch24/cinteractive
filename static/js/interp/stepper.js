@@ -13,8 +13,11 @@
 // AST -> Initial State
 
 define(["interp/eval", "interp/util"], function(evaler, util) {
+   // Compiles an initial AST node (CTranslUnit) into an initial state
    function compile(ast) {
       var state = build_initial_heap(ast);
+
+      // main should be the function name in the globals
       var main_addr = state.stack[0]["main"];
       
       return {
@@ -33,15 +36,23 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       };
    }
 
+   // evalSpecifiers evaluates a list of specifiers into type information
+   // eg pointers, structs, and unions.
    function evalSpecifiers(specs, state) {
       var types = _.map(specs, function(s) { 
          var type = s['spec']['node'];
 
+         // If it's a structure or union we need to find out the fields
          if (util.isSUType(type)) {
             var su = s['spec']['sutype'];
             var name = util.unquotify(su['ident']);
+
             switch(su['node']) {
                case "CStruct":
+                  // For each field:
+                  //
+                  // * Find the type of the field
+                  // * Get the name its declared as (which may or may not exist)
                   var fields = _.map(su['fields'], function(f) {
                      var field_type = evalSpecifiers(f['specifiers']);
                      if (!(_.isUndefined(f['declarations'])) && _.isArray(f['declarations'])
@@ -56,7 +67,9 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
                case "CUnion":
                   break;
             }
-         } else {
+         }
+         else {
+            // Otherwise just return the name (CInteger, CLong, CLongUnsigned, etc)
             return s['spec']['node']; 
          }
       });
@@ -65,11 +78,15 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
    }
 
 
+   // Push the parameters of the CFunctionDef pointed to by state.control
+   // onto the stack with appropriate heap information.
+   // 
+   // TODO make this part of CCall
    function push_params(state) {
       var top_addr = state.next - 1;
 
-      // chain on the params of the function
-      // for each CDecl, find the type specifiers and if there's multiple decls
+      // Chain on the params of the function
+      // For each CDecl, find the type specifiers and if there's multiple decls
       //   ie int a,b,c;
       // then flatten all these down and reverse them (first arg should be first on stack)
       // finally on each decl name add it to the stack starting from the top address down
@@ -92,21 +109,32 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
    }
 
    var step = {};
+
+   // When we find a CThunk then there must be a return entry in the state.
+   // :eval is the original node (could've been a CAssign rvalue fun call).
+   // :hole is what attribute to fill in in the original node.
    step["CThunk"] = function(state) {
       var node = state.control["eval"];
       var line = state.control["line"];
-      var hole = state.control["thunk"];
-      node["thunk"] = "filled";
-      node[state.control["thunk"]] = state.ret;
+      var hole = state.control["hole"];
+
+      node["hole"] = "filled";
+      node[state.control["hole"]] = state.ret;
       state.kont = function(ui, cm) {
          ui.tell('Executing thunk, filling hole ' + hole);
          ui.hilite_line(line);
       };
+
       state.ret = undefined;
       state.control = undefined;
+      // Finally put the node back on the dump
       _(state.dump).last().unshift(node);
+
       return state;
    };
+
+   // TODO: push params should go into evaling CCall
+   // Pushes the parameters onto the stack and fills in heapinfo.
    step["CFunDef"] = function(state) {
       var name = state.control['fun_def']['name'];
       var line = state.control['line'];
@@ -117,68 +145,100 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       };
       state.dump = _(state.dump).push(_(state.control["statements"]["block_items"]).cloneDeep());
       state.control = undefined;
+
       return state;
-   }
+   };
+
+   // Declaring a variable.
    step["CDecl"] = function(state) {
+      // Get the type of the variable.
       var type = evalSpecifiers(state.control["specifiers"], state);
       var names = '';
       var line = state.control['line'];
 
+      // For each variable declaration for this type on this line...
       _(state.control["declarations"]).map(function (decl) {
          var val;
-         if (_(decl).has('initializer') && decl['initializer'] !== null) {
+
+         // If there's a variable initializer ie int x = 0;
+         // The = 0 is the initializer. Could be int x = times_two(3);
+         if (_(decl).has('initializer') && decl['initializer'] !== null)
+         {
             val = evaler.eval(decl['initializer'], state);
             state = val.state;
             val = val.val;
-         } else {
+         } else
+         {
+            // Get a default value for the type
+            // TODO make this random data for C evil
             var valM = initial_value(decl, type, state);
             val = valM.val;
             state = valM.state;
          }
-            
+
          var name = util.unquotify(decl["declarator"]["name"]);
          names += name;
 
-         // if this is just regular type, then make heap info the type.
-         // otherwise we need to know if it's an array or pointer or whatevs
+         // If this is just regular type, then make heap info the type.
+         // otherwise we need to know if it's an array or pointer or whatevs.
          var heapinfo = {};
          var isCompound = false; // ie array, struct, union
          var compound_len = 0;
+
+         // If there's no attributes the declaration should be dependent on the type.
          if (_.isEmpty(decl["declarator"]["attrs"])) {
+            // If it's a struct or Union, then get the struct's type name (eg struct Point) 
+            // and type info from the state's user_types
+            // then enter it into the heapinfo as a CCompoundType and get the number of fields.
             if (type[0]['type'] === "CStruct" || type[0]['type'] === "CUnion") {
                var sname = type[0]['name'];
                var stype = state.user_types[sname];
                heapinfo = {node: "CCompoundType", type: stype};
                isCompound = true;
                compound_len = _(stype.fields).size();
-            } else {
+            } else
+            {
+               // Otherwise it's just an elementary type like int or double.
                heapinfo = {node: "CElemType", type: type, name: name};
             }
-         } else {
+         } else
+         {
+            // If there are attributes on the declarator then it's an array, pointer,
+            // or Function pointer (I think it's a fun ptr).
+            // Each array kinda builds on the last.
             var node_type = 'CDecl';
             var attrs = _.map(decl["declarator"]["attrs"], function(a) {
                var ret = {};
                ret["node"] = a["node"];
 
+               // If it's an array, eval the size of the array
+               // (eval because it could be 2 + 4 or crazyMath(2.9))
+               //
+               // TODO: Should be evalOrThunk
                if (ret["node"] === "CArrDeclr") {
                   node_type = 'CArrDeclr';
-
                   var size = evaler.eval(a["size"]["size"], state);
                   state = size.state;
+
                   ret["length"] = size.val;
                   ret["size"] = ret["length"] * evaler.sizes[type[0]];
                   ret["type"] = type;
                   compound_len += ret["length"];
 
                   isCompound = true;
-               } else if (ret["node"] === "CFunDeclr") {
+               } else if (ret["node"] === "CFunDeclr")
+               // TODO: Clearly
+               {
                   node_type = "CFunDeclr";
-               } else if (ret["node"] === "CPtrDeclr") {
+               } else if (ret["node"] === "CPtrDeclr")
+               // TODO: Clearly
+               {
                   node_type = "CPtrDeclr";
                }
 
                return ret;
             });
+
             heapinfo = {node: node_type, type: attrs, name: name};
          }
 
@@ -186,10 +246,12 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
 
          state.heapinfo[addr] = heapinfo
          state.stack[0][name] = addr;
+
          if (!isCompound) {
             state.heap[addr] = val;
             state.next += 1;
-         } else {
+         } else
+         {
             for (i = 0; i < compound_len; i++)
                state.heap[i + addr] = 0;
             state.next += compound_len;

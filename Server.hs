@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Language
+import System.Environment (lookupEnv)
+import Data.Maybe (fromMaybe)
 import Data.Aeson
 import Data.Aeson.Encode (fromValue)
 import Data.Conduit as DC
@@ -45,7 +47,7 @@ resolveContentType "js"  = textJS
 resolveContentType _     = textPlain
 
 main = do
-   let port = 3000
+   port <- read <$> fromMaybe "3000" <$> lookupEnv "PORT"
    putStrLn $ "Listening on port " ++ show port
    run port app
 

@@ -1,3 +1,9 @@
+// The general flow of this program starts by entering a C program in the textarea. Once the user clicks "Compile," it sends the program as a string to the server which uses the Language-C Haskell module to parse the C program into an AST, converts it into JSON, then sends it back to the user. Following this an initial State of the program is compiled using stepper.compile(ast) which sets up an initial state including any global variable declarations and function declarations.
+//
+// After this, the interpreter runs through the program collecting intermediate steps along the way. In the future this should be automatic and probably should have a limit on the number of steps collected so that loops don't run infinitely, but for now it runs all the way through after clicking the "Collect Steps" button at the top.
+//
+// Each "Step" corresponds to a C statement. C statements are essentially lines in a block. Each statement is handled by the stepper.step(state) function. The State has a field called Control which is a reference to the current statement to be performed. stepper.step returns back the State with all the effects of the Control instruction performed. The UI module then handles the logic of prettyprinting out the state of the memory.
+
 requirejs(["ui/ui", "ui/prettyprint", "interp/stepper", "ui/tooltips"], function(ui, prettyprint, stepper, tooltips) {
    var currLine = 0;
    var glState = {},

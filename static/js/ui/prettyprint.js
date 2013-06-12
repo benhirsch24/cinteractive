@@ -1,17 +1,21 @@
+// The pretty printer is used to display the state of the memory.
+// It uses mustache templates to do everything which are defined in ui/templates.js.
+// prettyprint.js mainly sets up the data for mustache to render.
 define(["ui/templates", "interp/util"], function(templates, util) {
    function unquotify(str) {
       str = str.slice(1);
       return str.slice(0, str.length - 1);
    }
 
+   // Pretty prints a single stack frame.
    var ppFrame = function(state, frameIdx) {
       var frame = state.frames[frameIdx];
       var params = [];
+
       _.forEach(frame.params, function(param, name) {
          _(params).push({name: name, type: param.type});
       });
 
-      // this is each variable in the frame
       var stack_frame = [];
       _.forEach(state.stack[frameIdx], function(addr, name) {
          if (util.isArray(state.heapinfo[addr])) {
@@ -33,6 +37,7 @@ define(["ui/templates", "interp/util"], function(templates, util) {
       return tbody;
    };
 
+   // Pretty prints the entire heap.
    var ppHeap = function(state) {
       var heap = '';
       var cp_ty, cp_len = 0;
@@ -90,6 +95,11 @@ define(["ui/templates", "interp/util"], function(templates, util) {
       return ret;
    }
 
+   // Used to pretty print the AST at the bottom.
+   function ipprint(ast) {
+      return pprint(ast, 0);
+   }
+
    function pprint(ast, level) {
       var ccat = function(w, s) { return w + s; }
       var ident = _.range(level).map(function(){return "..."}).reduce(ccat, '');
@@ -120,10 +130,6 @@ define(["ui/templates", "interp/util"], function(templates, util) {
       });
 
       return writer;
-   }
-
-   function ipprint(ast) {
-      return pprint(ast, 0);
    }
 
    function ppType(types, v) {

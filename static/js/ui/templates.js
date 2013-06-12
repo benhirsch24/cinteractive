@@ -17,10 +17,15 @@ define(function() {
       show_type["CBoolType"] = "bool";
 
       if (_.isArray(ts)) {
+         // For each type in this array of types, if it's not an object (just a string like CVoidType)
+         // then use the table above to get a prettier name for it.
+         // Otherwise if it's an array get some niceties like int [length] for the actual variable or for
+         // each individual entry int [0], int [1], etc.
          _.map(ts, function(t) {
             if (!_.isObject(t)) {
                type += show_type[t] + ' ';
-            } else {
+            } else 
+            {
                if (t.node === "CArrDeclr") {
                   if (isKey)
                      type += ppType(t.type) + '[' + t.length + ']';
@@ -29,10 +34,12 @@ define(function() {
                }
             }
          });
-      } else if (_.isObject(ts) && ts.type === "CStruct") {
+      } else if (_.isObject(ts) && ts.type === "CStruct") 
+      {
          if (isKey) {
             return 'struct ' + ts.name;
-         } else {
+         } else 
+         {
             var field_type = ppType(ts.fields[offset].type);
             var field_name = ts.fields[offset]['name'];
             return field_type + ' .' + field_name;
@@ -57,12 +64,14 @@ define(function() {
 
       return str;
    });
+
    Handlebars.registerPartial('signature', '{{frame.name}}({{params frame.params}})');
 
    Handlebars.registerHelper('print_type', function(type, isKey, offset) {
       return ppType(type, isKey, offset);
    });
 
+   // Prints a single value in the heap.
    Handlebars.registerHelper('heapval', function(val, info) {
       var str_templ, templ, context = {};
 
@@ -128,9 +137,9 @@ define(function() {
       return frame_templ;
    };
 
+   // Basically on function calls we enter the data in the heap, but the heapinfo isn't
+   // filled in until the actual CFunDef node is evaluated. Just print it then.
    var heap_entry = function(entry) {
-      // basically on function calls we enter the data in the heap, but the heapinfo isn't
-      // filled in until the actual CFunDef node is evaluated. Just print it then.
       if (_.isUndefined(entry.info))
          return '';
 

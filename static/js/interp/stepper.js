@@ -1,16 +1,26 @@
 // Official:
 //
-// State :: (Control, Env, Heap, Kont)
-// Control :: CAST
-// Env :: Name -> Addr
-// type Stack = Env
+// State :: (Control, Stack, Heap, Kont, Dump, Ret?, HeapInfo, UserTypes, [Frames])
+//
+// Control :: CNode
+//
+// Stack :: Name -> Addr
+//
 // Heap :: Addr -> Value
+//
 // Kont :: State -> UI Callback x Stepper Callback
-// Stepper :: State -> State
+//
+// Dump :: [CNode] (This is the instruction stack)
+//
+// HeapInfo :: Addr -> Info (including types, parameters in the case of functions, etc)
+//
+// UserTypes :: Name -> Fields (This is used to name structs/unions and in the future for typedefs).
+//
+// Frames organizes information for stack frames as currently the stack is a simple Name -> Addr hash.
+//
+// Step :: State -> State
 // 
 // UI Callback :: State -> ()
-//
-// AST -> Initial State
 
 define(["interp/eval", "interp/util"], function(evaler, util) {
    // Compiles an initial AST node (CTranslUnit) into an initial state
@@ -34,7 +44,74 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
          , frames: [{name: 'globals', params: []}]
          , ret: undefined
       };
-   }
+   };
+
+
+   // To build the initial heap just compile all the declarations available in the top level of the ast.
+   // Declarations can be CDecl or CFunDecl.
+   function build_initial_heap(ast) {
+      var state = {heap: {}, stack: [{}], next: 0, dump: [], heapinfo: {}, user_types: {}};
+      var decls = ast["decls"];
+
+      _(decls).map(function(n) {
+         return compileDecl[n["node"]](n, state);
+      });
+
+      return state;
+   };
+
+   // Compile Decl is used at the beginning of the program to compile the declarations onto the heap/stack.
+   var compileDecl = {};
+   compileDecl["CDecl"] = function(node, state) {
+      var type = evalSpecifiers(node["specifiers"], state);
+
+      // If it's a struct/union type then enter it in the user_types table
+      if (type[0]['type'] === "CStruct" || type[0]['type'] === "CUnion") {
+         state.user_types[type[0]['name']] = type[0];
+      }
+
+      // For each declaration that this CDecl node contains (eg int a,b has two declarations)
+      // Find the initial value and enter this value in the heap.
+      _.map(node["declarations"], function(d) {
+         var value = initial_value(d, type, state);
+         state = value.state;
+
+         var name = util.unquotify(d['declarator']['name']);
+         state.heap[state.next] = value.val;
+         state.heapinfo[state.next] = { 
+            'type': _.map(node["specifiers"], function(s) { return s['spec']['node']; }), 'name': name, 'node': 'CDecl'
+         };
+         state.stack[0][name] = state.next;
+         state.next += 1;
+      });
+
+      return state;
+   };
+
+   // For a function we need to get the types of the parameters and enter that in the heap info.
+   // Also allocate a little spot for it on the heap.
+   compileDecl["CFunDef"] = function(node, state) {
+      var name = util.unquotify(node["fun_def"]["name"]);
+      var fun_type = evalSpecifiers(node['specifiers'], state);
+      state.heap[state.next] = node;
+      state.stack[0][name] = state.next;
+
+      // Get param info.
+      var params = node['fun_def']['attrs'][0]['params'];
+
+      var fun_params = {};
+      var param_info = _.map(params, function(p) {
+         var type = evalSpecifiers(p['specifiers'], state);
+         var name = util.unquotify(p['declarations'][0]['declarator']['name']);
+         fun_params[name] = {'node': 'CDecl', type: type};
+      });
+
+      state.heapinfo[state.next] = { 'type': fun_type, 'name': name, 'node': 'CFunDef', 'params': fun_params };
+
+      state.next += 1;
+
+      return state;
+   };
 
    // evalSpecifiers evaluates a list of specifiers into type information
    // eg pointers, structs, and unions.
@@ -247,11 +324,12 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
          state.heapinfo[addr] = heapinfo
          state.stack[0][name] = addr;
 
+         // If this is not a compound type (struct/array/union) then just assign it in the heap.
          if (!isCompound) {
             state.heap[addr] = val;
             state.next += 1;
          } else
-         {
+         { // Otherwise initialize all of its components to 0.
             for (i = 0; i < compound_len; i++)
                state.heap[i + addr] = 0;
             state.next += compound_len;
@@ -266,6 +344,7 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
 
       return state;
    };
+
    step["CUnary"] = function(state) {
       var line = state.control.line;
       var msg = '';
@@ -290,6 +369,8 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       var ret = op(addr, state.heap);
 
       var v = addr;
+
+      // These are just messages to display.
       var unmsgs = {};
       unmsgs["CPreIncOp"] = 'Pre-incrementing ' + v;
       unmsgs["CPreDecOp"] = 'Pre-decrementing ' + v;
@@ -313,10 +394,15 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       };
       return state;
    };
+
    step["CExpr"] = function(state) {
       state.control = state.control["expr"]
       return step[state.control["node"]](state);
    };
+
+   // For assigning, we need to check whether the rhs is a function call using evalOrThunk.
+   // If it is, then stop and return the state because we need to jump into that function.
+   // If it was a function, then evaling the CThunk will have placed the returned value into rvalue.
    step["CAssign"] = function(state) {
       var control = _.cloneDeep(state.control);
       var line = state.control['line'];
@@ -330,8 +416,6 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       var lvalue = evaler.evalLhs(state.control["lvalue"], state);
       state = lvalue.state;
 
-      // Switch on assign ops
-
       var op = evaler.assops[state.control["op"]];
       var val = op(state.heap[lvalue.val], rvalue.val);
 
@@ -343,15 +427,22 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       };
       return state;
    };
+
+   // TODO: I don't think has been used yet. This would be used in a side-effecting
+   // function, just a statement.
    step["CCall"] = function(state) {
       var newstack = sequenceEval(state.control["args"], state);
       state.stack.push(newstack.vals);
 
       state.next += newstack.vals.length;
 
-      state.control = util.unquotify(state.heap[state["function"]["name"]]);
       return state;
-   }
+   };
+
+   // This is a block ie
+   // {
+   //    statement*
+   // }
    step["CCompound"] = function(state) {
       var line = state.control.line;
       state.dump = _(state.dump).push(state.control["block_items"]);
@@ -361,7 +452,13 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       };
       state.control = undefined;
       return state;
-   }
+   };
+
+   // Evaluate the initial guard and then undefine it (so that it doesn't get re-evaluated).
+   // Then check the guard. If it's false, just return.
+   // Otherwise if the guard is true, put this CFor object along with its step attribute (i++)
+   // and the actual statements being performed in the loop (next).
+   // Next will likely be a CCompound block.
    step["CFor"] = function(state) {
       var line = state.control.line;
 
@@ -393,6 +490,8 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       return state;
    };
 
+   // Similar to CFor, we evaluate the guard and return if it's false.
+   // Otherwise we unshift the CWhile node as well as its next attribute (CCompound block)
    step["CWhile"] = function(state) {
       var line = state.control.line;
       var guard = evaler.eval(state.control["guard"], state);
@@ -403,7 +502,8 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
             ui.tell("Condition was false, continuing");
             ui.hilite_line(line);
          };
-      } else {
+      } else 
+      {
          state.kont = function(ui, cm) {
             ui.tell("Condition was true, looping");
             ui.hilite_line(line);
@@ -438,6 +538,9 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       return state;
    };
 
+   // When returning from a function, make sure to put the return value in the state
+   // to be carried back into the CThunk call.
+   // Also delete the variables in the stack frame from the heap and decrement the next stack counter.
    step["CReturn"] = function(state) {
       var ret = evaler.eval(state.control, state);
       var line = state.control.line;
@@ -467,91 +570,22 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       return state;
    };
 
-
+   // If there's an initializer for this declaration then evaluate it and use that,
+   // otherwise just initialize to 0.
    function initial_value(decl, type, state) {
       var val = 0,
           s = {};
 
-      // if there's an initializer, use that
       if (!(_.isNull(decl["initializer"])) && decl["initializer"]["node"] === "CInit") {
          var init = evaler.eval(decl["initializer"], state);
          s = init.state;
          val = init.val;
-      } // otherwise decide based on the type
+      }
       else {
          s = state;
       }
 
       return {val: val, state: s};
-   }
-
-   function resolveVar(node, state) {
-      var type = evalSpecifiers(node["specifiers"], state);
-
-      _(node["declarations"]).map(function(d) {
-         var value = initial_value(d, type, state);
-         state = value.state;
-         var name = util.unquotify(d['declarator']['name']);
-         state.heap[state.next] = value.val;
-         state.stack[0][name] = state.next;
-         state.next += 1;
-      });
-
-      return state;
-   };
-
-   var compileDecl = {};
-   compileDecl["CDecl"] = function(node, state) {
-      var type = evalSpecifiers(node["specifiers"], state);
-
-      if (type[0]['type'] === "CStruct" || type[0]['type'] === "CUnion") {
-         state.user_types[type[0]['name']] = type[0];
-      }
-
-      _.map(node["declarations"], function(d) {
-         var value = initial_value(d, type, state);
-         state = value.state;
-         var name = util.unquotify(d['declarator']['name']);
-         state.heap[state.next] = value.val;
-         state.heapinfo[state.next] = { 'type': _.map(node["specifiers"], function(s) { return s['spec']['node']; }), 'name': name, 'node': 'CDecl' };
-         state.stack[0][name] = state.next;
-         state.next += 1;
-      });
-
-      return state;
-   };
-   compileDecl["CFunDef"] = function(node, state) {
-      var name = util.unquotify(node["fun_def"]["name"]);
-      var fun_type = evalSpecifiers(node['specifiers'], state);
-      state.heap[state.next] = node;
-      state.stack[0][name] = state.next;
-
-      // Get param info
-      var params = node['fun_def']['attrs'][0]['params'];
-
-      var fun_params = {};
-      var param_info = _.map(params, function(p) {
-         var type = evalSpecifiers(p['specifiers'], state);
-         var name = util.unquotify(p['declarations'][0]['declarator']['name']);
-         fun_params[name] = {'node': 'CDecl', type: type};
-      });
-
-      state.heapinfo[state.next] = { 'type': fun_type, 'name': name, 'node': 'CFunDef', 'params': fun_params };
-
-      state.next += 1;
-
-      return state;
-   };
-
-   function build_initial_heap(ast) {
-      var state = {heap: {}, stack: [{}], next: 0, dump: [], heapinfo: {}, user_types: {}};
-      var decls = ast["decls"];
-
-      _(decls).map(function(n) {
-         return compileDecl[n["node"]](n, state);
-      });
-
-      return state;
    }
 
    return {

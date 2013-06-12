@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>prettyprint.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="eval.html">
+                eval.js
+              </a>
+            
+              
+              <a class="source" href="stepper.html">
+                stepper.js
+              </a>
+            
+              
+              <a class="source" href="util.html">
+                util.js
+              </a>
+            
+              
+              <a class="source" href="main.html">
+                main.js
+              </a>
+            
+              
+              <a class="source" href="prettyprint.html">
+                prettyprint.js
+              </a>
+            
+              
+              <a class="source" href="templates.html">
+                templates.js
+              </a>
+            
+              
+              <a class="source" href="tooltips.html">
+                tooltips.js
+              </a>
+            
+              
+              <a class="source" href="ui.html">
+                ui.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>prettyprint.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <p>The pretty printer is used to display the state of the memory.
+It uses mustache templates to do everything which are defined in ui/templates.js.
+prettyprint.js mainly sets up the data for mustache to render.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>define([<span class="string">"ui/templates"</span>, <span class="string">"interp/util"</span>], <span class="keyword">function</span>(templates, util) {
+   <span class="function"><span class="keyword">function</span> <span class="title">unquotify</span><span class="params">(str)</span> {</span>
+      str = str.slice(<span class="number">1</span>);
+      <span class="keyword">return</span> str.slice(<span class="number">0</span>, str.length - <span class="number">1</span>);
+   }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Pretty prints a single stack frame.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> ppFrame = <span class="keyword">function</span>(state, frameIdx) {
+      <span class="keyword">var</span> frame = state.frames[frameIdx];
+      <span class="keyword">var</span> params = [];
+
+      _.forEach(frame.params, <span class="keyword">function</span>(param, name) {
+         _(params).push({name: name, type: param.type});
+      });
+
+      <span class="keyword">var</span> stack_frame = [];
+      _.forEach(state.stack[frameIdx], <span class="keyword">function</span>(addr, name) {
+         <span class="keyword">if</span> (util.isArray(state.heapinfo[addr])) {
+            _(stack_frame).push({name: name, addr: addr, value: <span class="literal">undefined</span>, info: state.heapinfo[addr], isCpound: <span class="literal">true</span>, isKey: <span class="literal">true</span>});
+            _.range(<span class="number">0</span>, util.getArrayLen(state.heapinfo[addr])).map(<span class="keyword">function</span>(i) {
+               _(stack_frame).push({name: name, addr: addr + i, value: state.heap[addr + i], info: state.heapinfo[addr], offset: i, isKey: <span class="literal">false</span>, isCpound: <span class="literal">true</span>});
+            });
+         } <span class="keyword">else</span> <span class="keyword">if</span> (util.isStruct(state.heapinfo[addr])) {
+            _(stack_frame).push({name: name, addr: addr, value: <span class="literal">undefined</span>, info: state.heapinfo[addr], isCpound: <span class="literal">true</span>, isKey: <span class="literal">true</span>});
+            _.range(<span class="number">0</span>, util.getStructSize(state.heapinfo[addr])).map(<span class="keyword">function</span>(i) {
+               _(stack_frame).push({name: name, addr: addr + i, value: state.heap[addr + i], info: state.heapinfo[addr], offset: i, isKey: <span class="literal">false</span>, isCpound: <span class="literal">true</span>});
+            });
+         } <span class="keyword">else</span> {
+            _(stack_frame).push({name: name, addr: addr, value: state.heap[addr], info: state.heapinfo[addr]});
+         }
+      });
+
+      <span class="keyword">var</span> tbody = templates.frame({name: frame.name, params: params}, stack_frame);
+      <span class="keyword">return</span> tbody;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Pretty prints the entire heap.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> ppHeap = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> heap = <span class="string">''</span>;
+      <span class="keyword">var</span> cp_ty, cp_len = <span class="number">0</span>;
+
+      _(state.heap).map(<span class="keyword">function</span>(value, addr) {
+         <span class="keyword">if</span> (cp_len === <span class="number">0</span> &amp;&amp; !_.isUndefined(state.heapinfo[addr]) &amp;&amp; 
+               (state.heapinfo[addr].node === <span class="string">'CArrDeclr'</span> || state.heapinfo[addr].node === <span class="string">"CCompoundType"</span>)) {
+            <span class="keyword">if</span> (state.heapinfo[addr].node === <span class="string">'CArrDeclr'</span>) {
+               cp_len = _.reduce(state.heapinfo[addr].type, <span class="keyword">function</span>(sum, t) {
+                  <span class="keyword">return</span> sum + t.length;
+               }, <span class="number">0</span>);
+            } <span class="keyword">else</span> <span class="keyword">if</span> (state.heapinfo[addr].node === <span class="string">'CCompoundType'</span>) {
+               cp_len = util.getStructSize(state.heapinfo[addr]);
+            }
+            cp_ty = state.heapinfo[addr];
+         }
+
+         <span class="keyword">if</span> (cp_len &gt; <span class="number">0</span>) {
+            heap += templates.heap_entry({addr: addr, value: value, info: cp_ty});
+            cp_len -= <span class="number">1</span>;
+         } <span class="keyword">else</span> <span class="keyword">if</span> (_.isUndefined(state.heapinfo[addr])) {
+            heap += templates.heap_entry({addr: addr, value: value, info: <span class="literal">undefined</span>});
+         } <span class="keyword">else</span> {
+            heap += templates.heap_entry({addr: addr, value: value, info: state.heapinfo[addr]});
+         }
+      });
+
+      <span class="keyword">return</span> heap;
+   };
+
+   <span class="keyword">var</span> update = <span class="keyword">function</span>(e, state, frameIdx) {
+      <span class="keyword">var</span> frame = ppFrame(state, frameIdx);
+      $(e.currentTarget).empty();
+
+      $(e.currentTarget).html(frame);
+      <span class="keyword">return</span> frame;
+   };
+
+   <span class="function"><span class="keyword">function</span> <span class="title">print_type</span><span class="params">(type)</span> {</span>
+      <span class="keyword">var</span> ret;
+
+      <span class="keyword">switch</span> (type) {
+         <span class="keyword">case</span> <span class="string">"CIntType"</span>:
+            ret = <span class="string">"int"</span>;
+            <span class="keyword">break</span>;
+         <span class="keyword">case</span> <span class="string">"CCharType"</span>:
+            ret = <span class="string">"char"</span>;
+            <span class="keyword">break</span>;
+         <span class="keyword">case</span> <span class="string">"CFloatType"</span>:
+            ret = <span class="string">"float"</span>;
+            <span class="keyword">break</span>;
+         <span class="keyword">default</span>: ret = type;
+      }
+
+      <span class="keyword">return</span> ret;
+   }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Used to pretty print the AST at the bottom.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">ipprint</span><span class="params">(ast)</span> {</span>
+      <span class="keyword">return</span> pprint(ast, <span class="number">0</span>);
+   }
+
+   <span class="function"><span class="keyword">function</span> <span class="title">pprint</span><span class="params">(ast, level)</span> {</span>
+      <span class="keyword">var</span> ccat = <span class="keyword">function</span>(w, s) { <span class="keyword">return</span> w + s; }
+      <span class="keyword">var</span> ident = _.range(level).map(<span class="keyword">function</span>(){<span class="keyword">return</span> <span class="string">"..."</span>}).reduce(ccat, <span class="string">''</span>);
+      <span class="keyword">var</span> br = <span class="string">"&lt;br&gt;"</span>,
+          si = <span class="string">"&lt;strong&gt;"</span>,
+          sc = <span class="string">"&lt;/strong&gt;"</span>;
+
+
+      <span class="keyword">var</span> writer = ident + si + ast[<span class="string">"node"</span>] + sc + br;
+      _(ast).forIn(<span class="keyword">function</span>(value, key) {
+         <span class="keyword">if</span> (key === <span class="string">"node"</span>)
+            <span class="keyword">return</span> <span class="string">""</span>;
+
+         <span class="keyword">if</span> (_(value).isString())
+            writer += ident + key + <span class="string">": "</span> + value + br;
+         <span class="keyword">else</span> <span class="keyword">if</span> (_(value).isArray()) {
+            <span class="keyword">var</span> values = _(value).map(<span class="keyword">function</span>(o){ <span class="keyword">return</span> <span class="string">"# "</span> + pprint(o, level + <span class="number">1</span>); }).reduce(ccat, <span class="string">''</span>);
+            writer += ident + key + <span class="string">":[ "</span> + br;
+            writer += values;
+            writer += ident + <span class="string">"]"</span> + br;
+         }
+         <span class="keyword">else</span> <span class="keyword">if</span> (_(value).isObject()) {
+            <span class="keyword">var</span> owriter = pprint(value, level + <span class="number">1</span>);
+            writer += ident + key + <span class="string">":{ "</span> + br;
+            writer += owriter;
+            writer += ident + <span class="string">"}"</span> + br;
+         }
+      });
+
+      <span class="keyword">return</span> writer;
+   }
+
+   <span class="function"><span class="keyword">function</span> <span class="title">ppType</span><span class="params">(types, v)</span> {</span>
+      <span class="keyword">var</span> type = <span class="string">''</span>;
+      <span class="keyword">var</span> ts = _.isArray(types) ? types : types.valueOf();
+
+      <span class="keyword">var</span> show_type = {};
+      show_type[<span class="string">"CVoidType"</span>] = <span class="string">"void"</span>;
+      show_type[<span class="string">"CCharType"</span>] = <span class="string">"char"</span>;
+      show_type[<span class="string">"CShortType"</span>] = <span class="string">"short"</span>;
+      show_type[<span class="string">"CIntType"</span>] = <span class="string">"int"</span>;
+      show_type[<span class="string">"CLongType"</span>] = <span class="string">"long"</span>;
+      show_type[<span class="string">"CFloatType"</span>] = <span class="string">"float"</span>;
+      show_type[<span class="string">"CDoubleType"</span>] = <span class="string">"double"</span>;
+      show_type[<span class="string">"CSignedType"</span>] = <span class="string">"signed"</span>;
+      show_type[<span class="string">"CUnsigType"</span>] = <span class="string">"unsigned"</span>;
+      show_type[<span class="string">"CBoolType"</span>] = <span class="string">"bool"</span>;
+
+      _.map(ts, <span class="keyword">function</span>(t) {
+            type += show_type[t] + <span class="string">' '</span>;
+      });
+      <span class="keyword">return</span> type;
+   }
+
+   <span class="function"><span class="keyword">function</span> <span class="title">ppParams</span><span class="params">(params)</span> {</span>
+      <span class="keyword">var</span> ret = <span class="string">''</span>;
+
+      _.forIn(params, <span class="keyword">function</span>(info, name) {
+         ret += ppType(info[<span class="string">'type'</span>]) + <span class="string">' '</span> + name + <span class="string">', '</span>;
+      });
+
+      ret = ret.slice(<span class="number">0</span>, ret.length - <span class="number">2</span>);
+      <span class="keyword">return</span> ret;
+   }
+
+   <span class="function"><span class="keyword">function</span> <span class="title">ppMemValue</span><span class="params">(value, info)</span> {</span>
+      <span class="keyword">var</span> type = <span class="string">''</span>;
+      <span class="keyword">if</span> (!_.isUndefined(info) &amp;&amp; !_.isUndefined(info[<span class="string">"type"</span>])) {
+         type = ppType(info[<span class="string">'type'</span>], value);
+      }
+
+      <span class="keyword">if</span> (_.isObject(value)) {
+         <span class="keyword">switch</span>(value[<span class="string">"node"</span>]) {
+            <span class="keyword">case</span> <span class="string">"CFunDef"</span>:
+               <span class="keyword">return</span> unquotify(value[<span class="string">"fun_def"</span>][<span class="string">"name"</span>]) + <span class="string">" :: Function ("</span> + ppParams(info[<span class="string">'params'</span>]) + <span class="string">")"</span>;
+            <span class="keyword">case</span> <span class="string">"CDecl"</span>:
+               <span class="keyword">return</span> info[<span class="string">"name"</span>] + <span class="string">" :: "</span> + type;
+         }
+      } <span class="keyword">else</span> <span class="keyword">if</span> (_.isArray(info)) {
+         _.map(info, <span class="keyword">function</span>(i) {
+            <span class="keyword">var</span> t = ppType(i[<span class="string">'type'</span>]);
+            <span class="keyword">switch</span>(i[<span class="string">"node"</span>]) {
+               <span class="keyword">case</span> <span class="string">"CArrDeclr"</span>:</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>var theType = &#39;&#39;;
+_.map(i[&#39;type&#39;], function(t){ theType += t + &#39; &#39;; });</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>                  type += <span class="string">'Array of '</span> + i[<span class="string">"length"</span>] + <span class="string">" "</span> + t + <span class="string">'s '</span>;
+                  <span class="keyword">break</span>;
+               <span class="keyword">case</span> <span class="string">"CPtrDeclr"</span>:
+                  type += <span class="string">' pointer to '</span>;
+                  <span class="keyword">break</span>;
+               <span class="keyword">case</span> <span class="string">"CFunDeclr"</span>:
+                  type += <span class="string">' function returning '</span>;
+                  <span class="keyword">break</span>;
+            }
+         });
+
+         <span class="keyword">return</span> type;
+      } <span class="keyword">else</span> {
+         <span class="keyword">return</span> value + <span class="string">' :: '</span> + type;
+      }
+   }
+
+   <span class="keyword">return</span> {
+      unquotify: unquotify,
+      ipprint: ipprint,
+      ppFrame: ppFrame,
+      ppHeap:  ppHeap,
+      update: update
+   }
+});</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

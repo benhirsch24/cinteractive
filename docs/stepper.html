@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>stepper.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="eval.html">
+                eval.js
+              </a>
+            
+              
+              <a class="source" href="stepper.html">
+                stepper.js
+              </a>
+            
+              
+              <a class="source" href="util.html">
+                util.js
+              </a>
+            
+              
+              <a class="source" href="main.html">
+                main.js
+              </a>
+            
+              
+              <a class="source" href="prettyprint.html">
+                prettyprint.js
+              </a>
+            
+              
+              <a class="source" href="templates.html">
+                templates.js
+              </a>
+            
+              
+              <a class="source" href="tooltips.html">
+                tooltips.js
+              </a>
+            
+              
+              <a class="source" href="ui.html">
+                ui.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>stepper.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <p>Official:</p>
+<p>State :: (Control, Stack, Heap, Kont, Dump, Ret?, HeapInfo, UserTypes, [Frames])</p>
+<p>Control :: CNode</p>
+<p>Stack :: Name -&gt; Addr</p>
+<p>Heap :: Addr -&gt; Value</p>
+<p>Kont :: State -&gt; UI Callback x Stepper Callback</p>
+<p>Dump :: [CNode] (This is the instruction stack)</p>
+<p>HeapInfo :: Addr -&gt; Info (including types, parameters in the case of functions, etc)</p>
+<p>UserTypes :: Name -&gt; Fields (This is used to name structs/unions and in the future for typedefs).</p>
+<p>Frames organizes information for stack frames as currently the stack is a simple Name -&gt; Addr hash.</p>
+<p>Step :: State -&gt; State</p>
+<p>UI Callback :: State -&gt; ()</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>define([<span class="string">"interp/eval"</span>, <span class="string">"interp/util"</span>], <span class="keyword">function</span>(evaler, util) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Compiles an initial AST node (CTranslUnit) into an initial state</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">compile</span><span class="params">(ast)</span> {</span>
+      <span class="keyword">var</span> state = build_initial_heap(ast);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>main should be the function name in the globals</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">var</span> main_addr = state.stack[<span class="number">0</span>][<span class="string">"main"</span>];
+      
+      <span class="keyword">return</span> {
+           control: state.heap[main_addr]
+         , stack:   state.stack
+         , heap:    state.heap
+         , user_types: _.cloneDeep(state.user_types)
+         , heapinfo: state.heapinfo
+         , kont: <span class="keyword">function</span>(ui) {
+              ui.tell(<span class="string">'Main on the stack'</span>);
+           }
+         , next: state.next
+         , dump: []
+         , frames: [{name: <span class="string">'globals'</span>, params: []}]
+         , ret: <span class="literal">undefined</span>
+      };
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>To build the initial heap just compile all the declarations available in the top level of the ast.
+Declarations can be CDecl or CFunDecl.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">build_initial_heap</span><span class="params">(ast)</span> {</span>
+      <span class="keyword">var</span> state = {heap: {}, stack: [{}], next: <span class="number">0</span>, dump: [], heapinfo: {}, user_types: {}};
+      <span class="keyword">var</span> decls = ast[<span class="string">"decls"</span>];
+
+      _(decls).map(<span class="keyword">function</span>(n) {
+         <span class="keyword">return</span> compileDecl[n[<span class="string">"node"</span>]](n, state);
+      });
+
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>Compile Decl is used at the beginning of the program to compile the declarations onto the heap/stack.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> compileDecl = {};
+   compileDecl[<span class="string">"CDecl"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> type = evalSpecifiers(node[<span class="string">"specifiers"</span>], state);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>If it&#39;s a struct/union type then enter it in the user_types table</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">if</span> (type[<span class="number">0</span>][<span class="string">'type'</span>] === <span class="string">"CStruct"</span> || type[<span class="number">0</span>][<span class="string">'type'</span>] === <span class="string">"CUnion"</span>) {
+         state.user_types[type[<span class="number">0</span>][<span class="string">'name'</span>]] = type[<span class="number">0</span>];
+      }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>For each declaration that this CDecl node contains (eg int a,b has two declarations)
+Find the initial value and enter this value in the heap.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      _.map(node[<span class="string">"declarations"</span>], <span class="keyword">function</span>(d) {
+         <span class="keyword">var</span> value = initial_value(d, type, state);
+         state = value.state;
+
+         <span class="keyword">var</span> name = util.unquotify(d[<span class="string">'declarator'</span>][<span class="string">'name'</span>]);
+         state.heap[state.next] = value.val;
+         state.heapinfo[state.next] = { 
+            <span class="string">'type'</span>: _.map(node[<span class="string">"specifiers"</span>], <span class="keyword">function</span>(s) { <span class="keyword">return</span> s[<span class="string">'spec'</span>][<span class="string">'node'</span>]; }), <span class="string">'name'</span>: name, <span class="string">'node'</span>: <span class="string">'CDecl'</span>
+         };
+         state.stack[<span class="number">0</span>][name] = state.next;
+         state.next += <span class="number">1</span>;
+      });
+
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>For a function we need to get the types of the parameters and enter that in the heap info.
+Also allocate a little spot for it on the heap.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   compileDecl[<span class="string">"CFunDef"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> name = util.unquotify(node[<span class="string">"fun_def"</span>][<span class="string">"name"</span>]);
+      <span class="keyword">var</span> fun_type = evalSpecifiers(node[<span class="string">'specifiers'</span>], state);
+      state.heap[state.next] = node;
+      state.stack[<span class="number">0</span>][name] = state.next;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>Get param info.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">var</span> params = node[<span class="string">'fun_def'</span>][<span class="string">'attrs'</span>][<span class="number">0</span>][<span class="string">'params'</span>];
+
+      <span class="keyword">var</span> fun_params = {};
+      <span class="keyword">var</span> param_info = _.map(params, <span class="keyword">function</span>(p) {
+         <span class="keyword">var</span> type = evalSpecifiers(p[<span class="string">'specifiers'</span>], state);
+         <span class="keyword">var</span> name = util.unquotify(p[<span class="string">'declarations'</span>][<span class="number">0</span>][<span class="string">'declarator'</span>][<span class="string">'name'</span>]);
+         fun_params[name] = {<span class="string">'node'</span>: <span class="string">'CDecl'</span>, type: type};
+      });
+
+      state.heapinfo[state.next] = { <span class="string">'type'</span>: fun_type, <span class="string">'name'</span>: name, <span class="string">'node'</span>: <span class="string">'CFunDef'</span>, <span class="string">'params'</span>: fun_params };
+
+      state.next += <span class="number">1</span>;
+
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>evalSpecifiers evaluates a list of specifiers into type information
+eg pointers, structs, and unions.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">evalSpecifiers</span><span class="params">(specs, state)</span> {</span>
+      <span class="keyword">var</span> types = _.map(specs, <span class="keyword">function</span>(s) { 
+         <span class="keyword">var</span> type = s[<span class="string">'spec'</span>][<span class="string">'node'</span>];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>If it&#39;s a structure or union we need to find out the fields</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>         <span class="keyword">if</span> (util.isSUType(type)) {
+            <span class="keyword">var</span> su = s[<span class="string">'spec'</span>][<span class="string">'sutype'</span>];
+            <span class="keyword">var</span> name = util.unquotify(su[<span class="string">'ident'</span>]);
+
+            <span class="keyword">switch</span>(su[<span class="string">'node'</span>]) {
+               <span class="keyword">case</span> <span class="string">"CStruct"</span>:</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>For each field:</p>
+<ul>
+<li>Find the type of the field</li>
+<li>Get the name its declared as (which may or may not exist)</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>                  <span class="keyword">var</span> fields = _.map(su[<span class="string">'fields'</span>], <span class="keyword">function</span>(f) {
+                     <span class="keyword">var</span> field_type = evalSpecifiers(f[<span class="string">'specifiers'</span>]);
+                     <span class="keyword">if</span> (!(_.isUndefined(f[<span class="string">'declarations'</span>])) &amp;&amp; _.isArray(f[<span class="string">'declarations'</span>])
+                        &amp;&amp; !(_.isEmpty(f[<span class="string">'declarations'</span>])))
+                     {
+                        <span class="keyword">var</span> decl = f[<span class="string">'declarations'</span>][<span class="number">0</span>][<span class="string">'declarator'</span>];
+                        <span class="keyword">var</span> field_name = util.unquotify(decl[<span class="string">'name'</span>]);
+                        <span class="keyword">return</span> { name: field_name, type: field_type };
+                     }
+                  });
+                  <span class="keyword">return</span> { type: <span class="string">'CStruct'</span>, name: name, fields: fields };
+               <span class="keyword">case</span> <span class="string">"CUnion"</span>:
+                  <span class="keyword">break</span>;
+            }
+         }
+         <span class="keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>Otherwise just return the name (CInteger, CLong, CLongUnsigned, etc)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">return</span> s[<span class="string">'spec'</span>][<span class="string">'node'</span>]; 
+         }
+      });
+
+      <span class="keyword">return</span> types;
+   }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>Push the parameters of the CFunctionDef pointed to by state.control
+onto the stack with appropriate heap information.</p>
+<p>TODO make this part of CCall</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">push_params</span><span class="params">(state)</span> {</span>
+      <span class="keyword">var</span> top_addr = state.next - <span class="number">1</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>Chain on the params of the function
+For each CDecl, find the type specifiers and if there&#39;s multiple decls
+  ie int a,b,c;
+then flatten all these down and reverse them (first arg should be first on stack)
+finally on each decl name add it to the stack starting from the top address down
+since the CCall pushed the args into a new stack frame on the heap already</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      _(state.control[<span class="string">"fun_def"</span>][<span class="string">"attrs"</span>][<span class="number">0</span>][<span class="string">"params"</span>]).map(<span class="keyword">function</span>(p) {
+         <span class="keyword">var</span> type = evalSpecifiers(p[<span class="string">"specifiers"</span>], state);
+         <span class="keyword">var</span> decls = _.map(p.declarations, <span class="keyword">function</span>(decl) {
+            <span class="keyword">var</span> d = decl;
+            d[<span class="string">"type"</span>] = type;
+            <span class="keyword">return</span> d;
+         });
+         <span class="keyword">return</span> decls;
+      }).flatten().reverse().map(<span class="keyword">function</span>(decl) {
+         <span class="keyword">var</span> name = util.unquotify(decl[<span class="string">"declarator"</span>][<span class="string">"name"</span>]);
+         <span class="keyword">var</span> type = decl[<span class="string">"type"</span>];
+         state.stack[<span class="number">0</span>][name] = top_addr;
+         state.heapinfo[top_addr] = {<span class="string">'node'</span>: <span class="string">'CDecl'</span>, type: type, name: name};
+         top_addr -= <span class="number">1</span>;
+      });
+   }
+
+   <span class="keyword">var</span> step = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>When we find a CThunk then there must be a return entry in the state.
+:eval is the original node (could&#39;ve been a CAssign rvalue fun call).
+:hole is what attribute to fill in in the original node.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   step[<span class="string">"CThunk"</span>] = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> node = state.control[<span class="string">"eval"</span>];
+      <span class="keyword">var</span> line = state.control[<span class="string">"line"</span>];
+      <span class="keyword">var</span> hole = state.control[<span class="string">"hole"</span>];
+
+      node[<span class="string">"hole"</span>] = <span class="string">"filled"</span>;
+      node[state.control[<span class="string">"hole"</span>]] = state.ret;
+      state.kont = <span class="keyword">function</span>(ui, cm) {
+         ui.tell(<span class="string">'Executing thunk, filling hole '</span> + hole);
+         ui.hilite_line(line);
+      };
+
+      state.ret = <span class="literal">undefined</span>;
+      state.control = <span class="literal">undefined</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>Finally put the node back on the dump</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      _(state.dump).last().unshift(node);
+
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>TODO: push params should go into evaling CCall
+Pushes the parameters onto the stack and fills in heapinfo.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   step[<span class="string">"CFunDef"</span>] = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> name = state.control[<span class="string">'fun_def'</span>][<span class="string">'name'</span>];
+      <span class="keyword">var</span> line = state.control[<span class="string">'line'</span>];
+      stack = push_params(state);
+      state.kont = <span class="keyword">function</span>(ui, cm) {
+         ui.tell(<span class="string">'Calling Function: '</span> + util.unquotify(name));
+         ui.hilite_line(line);
+      };
+      state.dump = _(state.dump).push(_(state.control[<span class="string">"statements"</span>][<span class="string">"block_items"</span>]).cloneDeep());
+      state.control = <span class="literal">undefined</span>;
+
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>Declaring a variable.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   step[<span class="string">"CDecl"</span>] = <span class="keyword">function</span>(state) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>Get the type of the variable.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">var</span> type = evalSpecifiers(state.control[<span class="string">"specifiers"</span>], state);
+      <span class="keyword">var</span> names = <span class="string">''</span>;
+      <span class="keyword">var</span> line = state.control[<span class="string">'line'</span>];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>For each variable declaration for this type on this line...</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      _(state.control[<span class="string">"declarations"</span>]).map(<span class="function"><span class="keyword">function</span> <span class="params">(decl)</span> {</span>
+         <span class="keyword">var</span> val;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>If there&#39;s a variable initializer ie int x = 0;
+The = 0 is the initializer. Could be int x = times_two(3);</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>         <span class="keyword">if</span> (_(decl).has(<span class="string">'initializer'</span>) &amp;&amp; decl[<span class="string">'initializer'</span>] !== <span class="literal">null</span>)
+         {
+            val = evaler.eval(decl[<span class="string">'initializer'</span>], state);
+            state = val.state;
+            val = val.val;
+         } <span class="keyword">else</span>
+         {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p>Get a default value for the type
+TODO make this random data for C evil</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">var</span> valM = initial_value(decl, type, state);
+            val = valM.val;
+            state = valM.state;
+         }
+
+         <span class="keyword">var</span> name = util.unquotify(decl[<span class="string">"declarator"</span>][<span class="string">"name"</span>]);
+         names += name;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>If this is just regular type, then make heap info the type.
+otherwise we need to know if it&#39;s an array or pointer or whatevs.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>         <span class="keyword">var</span> heapinfo = {};
+         <span class="keyword">var</span> isCompound = <span class="literal">false</span>; <span class="comment">// ie array, struct, union</span>
+         <span class="keyword">var</span> compound_len = <span class="number">0</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>If there&#39;s no attributes the declaration should be dependent on the type.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>         <span class="keyword">if</span> (_.isEmpty(decl[<span class="string">"declarator"</span>][<span class="string">"attrs"</span>])) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>If it&#39;s a struct or Union, then get the struct&#39;s type name (eg struct Point) 
+and type info from the state&#39;s user_types
+then enter it into the heapinfo as a CCompoundType and get the number of fields.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">if</span> (type[<span class="number">0</span>][<span class="string">'type'</span>] === <span class="string">"CStruct"</span> || type[<span class="number">0</span>][<span class="string">'type'</span>] === <span class="string">"CUnion"</span>) {
+               <span class="keyword">var</span> sname = type[<span class="number">0</span>][<span class="string">'name'</span>];
+               <span class="keyword">var</span> stype = state.user_types[sname];
+               heapinfo = {node: <span class="string">"CCompoundType"</span>, type: stype};
+               isCompound = <span class="literal">true</span>;
+               compound_len = _(stype.fields).size();
+            } <span class="keyword">else</span>
+            {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>Otherwise it&#39;s just an elementary type like int or double.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>               heapinfo = {node: <span class="string">"CElemType"</span>, type: type, name: name};
+            }
+         } <span class="keyword">else</span>
+         {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <p>If there are attributes on the declarator then it&#39;s an array, pointer,
+or Function pointer (I think it&#39;s a fun ptr).
+Each array kinda builds on the last.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">var</span> node_type = <span class="string">'CDecl'</span>;
+            <span class="keyword">var</span> attrs = _.map(decl[<span class="string">"declarator"</span>][<span class="string">"attrs"</span>], <span class="keyword">function</span>(a) {
+               <span class="keyword">var</span> ret = {};
+               ret[<span class="string">"node"</span>] = a[<span class="string">"node"</span>];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>If it&#39;s an array, eval the size of the array
+(eval because it could be 2 + 4 or crazyMath(2.9))</p>
+<p>TODO: Should be evalOrThunk</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>               <span class="keyword">if</span> (ret[<span class="string">"node"</span>] === <span class="string">"CArrDeclr"</span>) {
+                  node_type = <span class="string">'CArrDeclr'</span>;
+                  <span class="keyword">var</span> size = evaler.eval(a[<span class="string">"size"</span>][<span class="string">"size"</span>], state);
+                  state = size.state;
+
+                  ret[<span class="string">"length"</span>] = size.val;
+                  ret[<span class="string">"size"</span>] = ret[<span class="string">"length"</span>] * evaler.sizes[type[<span class="number">0</span>]];
+                  ret[<span class="string">"type"</span>] = type;
+                  compound_len += ret[<span class="string">"length"</span>];
+
+                  isCompound = <span class="literal">true</span>;
+               } <span class="keyword">else</span> <span class="keyword">if</span> (ret[<span class="string">"node"</span>] === <span class="string">"CFunDeclr"</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <p>TODO: Clearly</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>               {
+                  node_type = <span class="string">"CFunDeclr"</span>;
+               } <span class="keyword">else</span> <span class="keyword">if</span> (ret[<span class="string">"node"</span>] === <span class="string">"CPtrDeclr"</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <p>TODO: Clearly</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>               {
+                  node_type = <span class="string">"CPtrDeclr"</span>;
+               }
+
+               <span class="keyword">return</span> ret;
+            });
+
+            heapinfo = {node: node_type, type: attrs, name: name};
+         }
+
+         <span class="keyword">var</span> addr = state.next;
+
+         state.heapinfo[addr] = heapinfo
+         state.stack[<span class="number">0</span>][name] = addr;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <p>If this is not a compound type (struct/array/union) then just assign it in the heap.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>         <span class="keyword">if</span> (!isCompound) {
+            state.heap[addr] = val;
+            state.next += <span class="number">1</span>;
+         } <span class="keyword">else</span>
+         { <span class="comment">// Otherwise initialize all of its components to 0.</span>
+            <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; compound_len; i++)
+               state.heap[i + addr] = <span class="number">0</span>;
+            state.next += compound_len;
+         }
+      });
+
+      state.control = <span class="literal">undefined</span>;
+      state.kont = <span class="keyword">function</span>(ui, cm) {
+         ui.tell(<span class="string">'Declared: '</span> + names);
+         ui.hilite_line(line);
+      };
+
+      <span class="keyword">return</span> state;
+   };
+
+   step[<span class="string">"CUnary"</span>] = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> line = state.control.line;
+      <span class="keyword">var</span> msg = <span class="string">''</span>;
+
+      <span class="keyword">var</span> val = evaler.evalLhs(state.control[<span class="string">"expr"</span>], state);
+      <span class="keyword">var</span> addr = val.val;
+      <span class="keyword">var</span> ret;
+
+      <span class="keyword">var</span> remove = <span class="literal">false</span>;
+
+      <span class="keyword">if</span> (_.isUndefined(state.heap[addr])) { <span class="comment">// you can do eg 1++ which shouldn't actually store anywhere, just temporary</span>
+         remove = <span class="literal">true</span>;
+         state.heap[-<span class="number">1</span>] = v;
+         addr = -<span class="number">1</span>;
+      }
+
+      <span class="keyword">if</span> (remove) {
+         <span class="keyword">delete</span> state.heap[-<span class="number">1</span>];
+      }
+
+      <span class="keyword">var</span> op = evaler.unops[state.control[<span class="string">"op"</span>]];
+      <span class="keyword">var</span> ret = op(addr, state.heap);
+
+      <span class="keyword">var</span> v = addr;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <p>These are just messages to display.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">var</span> unmsgs = {};
+      unmsgs[<span class="string">"CPreIncOp"</span>] = <span class="string">'Pre-incrementing '</span> + v;
+      unmsgs[<span class="string">"CPreDecOp"</span>] = <span class="string">'Pre-decrementing '</span> + v;
+      unmsgs[<span class="string">"CPostIncOp"</span>] = <span class="string">'Post-incrementing '</span> + v + <span class="string">', this takes place after the stmt'</span>;
+      unmsgs[<span class="string">"CPostDecOp"</span>] = <span class="string">'Post-decrementing '</span> + v + <span class="string">', this takes place after the stmt'</span>;
+      unmsgs[<span class="string">"CAdrOp"</span>] = <span class="string">'Returning address of '</span> + v;
+      unmsgs[<span class="string">"CIndOp"</span>] = <span class="string">'Returing where '</span> + v + <span class="string">' points to.'</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <p>unmsgs[&quot;CPlusOp&quot;] = function(u) { return u; } // TODO ignoring these two for now because unary +?
+unmsgs[&quot;CMinOp&quot;] = function(u) { return u; }</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      unmsgs[<span class="string">"CCompOp"</span>] = <span class="string">"Returning one's complement of "</span> + v;
+      unmsgs[<span class="string">"CNegOp"</span>] = <span class="string">"Returing negation of "</span> + v;
+      <span class="keyword">var</span> msg = unmsgs[state.control[<span class="string">"op"</span>]];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <p>TODO: haven&#39;t used val yet?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">var</span> val = ret.val;
+      state.heap = ret.heap;
+
+      state.kont = <span class="keyword">function</span>(ui, cm) {
+         ui.hilite_line(line);
+         ui.tell(msg);
+      };
+      <span class="keyword">return</span> state;
+   };
+
+   step[<span class="string">"CExpr"</span>] = <span class="keyword">function</span>(state) {
+      state.control = state.control[<span class="string">"expr"</span>]
+      <span class="keyword">return</span> step[state.control[<span class="string">"node"</span>]](state);
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>For assigning, we need to check whether the rhs is a function call using evalOrThunk.
+If it is, then stop and return the state because we need to jump into that function.
+If it was a function, then evaling the CThunk will have placed the returned value into rvalue.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   step[<span class="string">"CAssign"</span>] = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> control = _.cloneDeep(state.control);
+      <span class="keyword">var</span> line = state.control[<span class="string">'line'</span>];
+
+      <span class="keyword">var</span> rvalue = evaler.evalOrThunk(state.control[<span class="string">"rvalue"</span>], state, <span class="string">"rvalue"</span>, state.control);
+      <span class="keyword">if</span> (_.isObject(rvalue.val) &amp;&amp; !_.isUndefined(rvalue.val[<span class="string">"node"</span>]) &amp;&amp; evaler.isThunk(rvalue.val)) {
+         <span class="keyword">return</span> state;
+      }
+      state = rvalue.state;
+
+      <span class="keyword">var</span> lvalue = evaler.evalLhs(state.control[<span class="string">"lvalue"</span>], state);
+      state = lvalue.state;
+
+      <span class="keyword">var</span> op = evaler.assops[state.control[<span class="string">"op"</span>]];
+      <span class="keyword">var</span> val = op(state.heap[lvalue.val], rvalue.val);
+
+      state.control = <span class="literal">undefined</span>;
+      state.heap[lvalue.val] = val;
+      state.kont = <span class="keyword">function</span>(ui, cm) {
+         ui.tell(<span class="string">'Changed var at '</span> + lvalue.val + <span class="string">' to '</span> + val);
+         ui.hilite_line(line);
+      };
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p>TODO: I don&#39;t think has been used yet. This would be used in a side-effecting
+function, just a statement.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   step[<span class="string">"CCall"</span>] = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> newstack = sequenceEval(state.control[<span class="string">"args"</span>], state);
+      state.stack.push(newstack.vals);
+
+      state.next += newstack.vals.length;
+
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <p>This is a block ie
+{
+   statement*
+}</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   step[<span class="string">"CCompound"</span>] = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> line = state.control.line;
+      state.dump = _(state.dump).push(state.control[<span class="string">"block_items"</span>]);
+      state.kont = <span class="keyword">function</span>(ui, cm) {
+         ui.tell(<span class="string">'Compound statements'</span>);
+         ui.hilite_line(line);
+      };
+      state.control = <span class="literal">undefined</span>;
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <p>Evaluate the initial guard and then undefine it (so that it doesn&#39;t get re-evaluated).
+Then check the guard. If it&#39;s false, just return.
+Otherwise if the guard is true, put this CFor object along with its step attribute (i++)
+and the actual statements being performed in the loop (next).
+Next will likely be a CCompound block.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   step[<span class="string">"CFor"</span>] = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> line = state.control.line;
+
+      <span class="keyword">if</span> (!(_.isUndefined(state.control[<span class="string">"init"</span>]))) {
+         <span class="keyword">var</span> init = evaler.eval(state.control[<span class="string">"init"</span>], state);
+         state = init.state;
+         state.control[<span class="string">"init"</span>] = <span class="literal">undefined</span>;
+      }
+
+      <span class="keyword">var</span> guard = evaler.eval(state.control[<span class="string">"guard"</span>], state);
+      state = guard.state;
+
+      <span class="keyword">var</span> msg = <span class="string">''</span>;
+
+      <span class="keyword">if</span> (guard.val === <span class="number">0</span> || !guard.val) {
+         msg = <span class="string">"Guard was false, skipping loop"</span>;
+      } <span class="keyword">else</span> {
+         msg = <span class="string">"Guard was true, looping"</span>;
+         _(state.dump).last().unshift(_.cloneDeep(state.control));
+         _(state.dump).last().unshift(_.cloneDeep(state.control[<span class="string">"step"</span>]));
+         _(state.dump).last().unshift(_.cloneDeep(state.control[<span class="string">"next"</span>]));
+      }
+
+      state.kont = <span class="keyword">function</span>(ui, cm) {
+         ui.hilite_line(line);
+         ui.tell(msg);
+      };
+
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <p>Similar to CFor, we evaluate the guard and return if it&#39;s false.
+Otherwise we unshift the CWhile node as well as its next attribute (CCompound block)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   step[<span class="string">"CWhile"</span>] = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> line = state.control.line;
+      <span class="keyword">var</span> guard = evaler.eval(state.control[<span class="string">"guard"</span>], state);
+      state = guard.state;
+
+      <span class="keyword">if</span> (guard.val === <span class="number">0</span> || !guard.val) {
+         state.kont = <span class="keyword">function</span>(ui, cm) {
+            ui.tell(<span class="string">"Condition was false, continuing"</span>);
+            ui.hilite_line(line);
+         };
+      } <span class="keyword">else</span> 
+      {
+         state.kont = <span class="keyword">function</span>(ui, cm) {
+            ui.tell(<span class="string">"Condition was true, looping"</span>);
+            ui.hilite_line(line);
+         };
+         _(state.dump).last().unshift(_.cloneDeep(state.control));
+         _(state.dump).last().unshift(_.cloneDeep(state.control[<span class="string">"next"</span>]));
+      }
+
+      <span class="keyword">return</span> state;
+   };
+
+   step[<span class="string">"CIf"</span>] = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> line = state.control.line;
+      <span class="keyword">var</span> guard = evaler.eval(state.control[<span class="string">"guard"</span>], state);
+      state = guard.state;
+      <span class="keyword">var</span> happ = <span class="string">''</span>;
+
+      <span class="keyword">if</span> (guard.val === <span class="number">0</span> || !guard.val) {
+         _(state.dump).last().unshift(state.control[<span class="string">"false"</span>]);
+         happ = <span class="string">'Condition was false.'</span>;
+      } <span class="keyword">else</span> {
+         _(state.dump).last().unshift(state.control[<span class="string">"true"</span>]);
+         happ = <span class="string">'Condition was true.'</span>;
+      }
+
+      state.kont = <span class="keyword">function</span>(ui, cm) {
+         ui.tell(happ);
+         ui.hilite_line(line);
+      };
+      state.control = <span class="literal">undefined</span>;
+
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <p>When returning from a function, make sure to put the return value in the state
+to be carried back into the CThunk call.
+Also delete the variables in the stack frame from the heap and decrement the next stack counter.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   step[<span class="string">"CReturn"</span>] = <span class="keyword">function</span>(state) {
+      <span class="keyword">var</span> ret = evaler.eval(state.control, state);
+      <span class="keyword">var</span> line = state.control.line;
+
+      <span class="keyword">if</span> (_.isString(ret.val))
+         ret.val = state.heap[varLookup(ret.val, state.stack)];
+
+      state = ret.state;
+
+      <span class="keyword">var</span> stacklen = _(state.stack[<span class="number">0</span>]).keys().size();
+      state.next -= stacklen;
+
+      _(state.stack[<span class="number">0</span>]).forIn(<span class="keyword">function</span>(addr, name) {
+         <span class="keyword">delete</span> state.heap[addr];
+      });
+
+      _(state.stack).shift();
+      state.kont = <span class="keyword">function</span>(ui, cm) {
+         ui.tell(<span class="string">'Returning val: '</span> + ret.val);
+         ui.hilite_line(line);
+      };
+      state.ret = ret.val;
+      state.control = <span class="literal">undefined</span>;
+      state.dump.pop();
+      state.frames.shift();
+
+      <span class="keyword">return</span> state;
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <p>If there&#39;s an initializer for this declaration then evaluate it and use that,
+otherwise just initialize to 0.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">initial_value</span><span class="params">(decl, type, state)</span> {</span>
+      <span class="keyword">var</span> val = <span class="number">0</span>,
+          s = {};
+
+      <span class="keyword">if</span> (!(_.isNull(decl[<span class="string">"initializer"</span>])) &amp;&amp; decl[<span class="string">"initializer"</span>][<span class="string">"node"</span>] === <span class="string">"CInit"</span>) {
+         <span class="keyword">var</span> init = evaler.eval(decl[<span class="string">"initializer"</span>], state);
+         s = init.state;
+         val = init.val;
+      }
+      <span class="keyword">else</span> {
+         s = state;
+      }
+
+      <span class="keyword">return</span> {val: val, state: s};
+   }
+
+   <span class="keyword">return</span> {
+      step: step,
+      compile: compile
+   };
+});</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

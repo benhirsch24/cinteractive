@@ -61,6 +61,10 @@ app req =
                                   ext         = last . splitOn "." $ last rest
                                   contentType = resolveContentType ext
                               in  return $ fileResponse [(hContentType, contentType)] filepath
+      path@("docs":rest) -> let   filepath    = unpack $ intercalate "/" path
+                                  ext         = last . splitOn "." $ last rest
+                                  contentType = resolveContentType ext
+                              in  return $ fileResponse [(hContentType, contentType)] filepath
       _ -> return $ htmlFileResponse "index.html"
 
 parse :: Sink BU.ByteString (ResourceT IO) Response

@@ -2,16 +2,20 @@ define(["interp/stepper", "ui/prettyprint"], function(stepper, prettyprint) { re
    var numFrames = 0;
    var curLine = 0;
 
+   // This handles all the logic to update the memory UI.
    var updateMemory = function(state) {
       var curFrames = state.stack.length;
 
+      // If there's a new frame make a nice sliding motion.
       if (curFrames > numFrames) {
          var frame = $('<li class="frame">' + prettyprint.ppFrame(state, 0) + '</li>');
          frame.hide();
          $('#frames').prepend(frame);
          frame.slideDown();
       }
-      else if (curFrames < numFrames) {
+      else if (curFrames < numFrames) 
+      {
+         // If we popped back from a function the slide the frame back up.
          $('#frames li:first').slideUp();
          $('#frames li:first').remove();
       }
@@ -34,7 +38,7 @@ define(["interp/stepper", "ui/prettyprint"], function(stepper, prettyprint) { re
 
    var kont = {
       tell: function(msg) {
-         $('#whatsgoingon').append(msg + '<br>');
+         $('#whatsgoingon').html(msg + '<br>');
       },
       hilite_line: function(line) {
          CM.removeLineClass(curLine, 'wrap', 'active_line');

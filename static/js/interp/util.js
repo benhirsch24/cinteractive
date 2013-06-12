@@ -1,3 +1,4 @@
+// These are utility functions.
 define(function() {
    var isArray = function(info) {
       return !(_.isUndefined(info)) && !(_.isUndefined(info["node"])) && info["node"] === "CArrDeclr";

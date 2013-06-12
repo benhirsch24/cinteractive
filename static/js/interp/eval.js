@@ -371,6 +371,7 @@ define(["interp/util"], function(util) {
       return eval(node["expr"], state);
    };
 
+   // I don't believe this is used
    evalNode["CWhile"] = function(node, state) {
       var guard = eval(node["guard"], state);
       var next;
@@ -382,15 +383,7 @@ define(["interp/util"], function(util) {
       return {val: {}, state: guard.state};
    };
 
-   evalNode["CIf"] = function(node, state) {
-      var ret = eval(node["expr"], state);
-
-      if (isTrue(ret.val))
-         return eval(node["true"], expr_ret.state);
-      else
-         return eval(node["false"], expr_ret.state);
-   };
-
+   // This one either
    evalNode["CFor"] = function(node, state) {
       var init = eval(node["init"], state);
       var guard = eval(node["guard"], init.state);
@@ -401,6 +394,15 @@ define(["interp/util"], function(util) {
          guard = eval(node["guard"], stat.state);
       }
       return {val: {}, state: guard.state};
+   };
+
+   evalNode["CIf"] = function(node, state) {
+      var ret = eval(node["expr"], state);
+
+      if (isTrue(ret.val))
+         return eval(node["true"], expr_ret.state);
+      else
+         return eval(node["false"], expr_ret.state);
    };
 
    evalNode["CReturn"] = function(node, state) {
@@ -488,6 +490,7 @@ define(["interp/util"], function(util) {
       }
 
       var enode = eval(node, state);
+
       // not a var, not a func
       if (_.isUndefined(enode.val["node"]) || !isFunction(enode.val))
          return enode;

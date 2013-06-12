@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>eval.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="eval.html">
+                eval.js
+              </a>
+            
+              
+              <a class="source" href="stepper.html">
+                stepper.js
+              </a>
+            
+              
+              <a class="source" href="util.html">
+                util.js
+              </a>
+            
+              
+              <a class="source" href="main.html">
+                main.js
+              </a>
+            
+              
+              <a class="source" href="prettyprint.html">
+                prettyprint.js
+              </a>
+            
+              
+              <a class="source" href="templates.html">
+                templates.js
+              </a>
+            
+              
+              <a class="source" href="tooltips.html">
+                tooltips.js
+              </a>
+            
+              
+              <a class="source" href="ui.html">
+                ui.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>eval.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <p> eval :: (ASTNode, Env) -&gt; (Value, Env)
+ type Env = (Stack, Heap, Dump, HeapInfo)
+ type Stack = Map VariableName Addr
+ type Memory = Map Addr Value
+ type VariableName = String
+ type Addr = Int</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>define([<span class="string">"interp/util"</span>], <span class="keyword">function</span>(util) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Assignment operators, which is mainly arithmetic</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> assops = {};
+   assops[<span class="string">"CAssignOp"</span>] = <span class="keyword">function</span>(l, r) { <span class="keyword">return</span> r; };
+   assops[<span class="string">"CMulAssOp"</span>] = <span class="keyword">function</span>(l, r) { <span class="keyword">return</span> l * r; }
+   assops[<span class="string">"CDivAssOp"</span>] = <span class="keyword">function</span>(l, r) { <span class="keyword">return</span> l / r; }
+   assops[<span class="string">"CRemAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l % r; };
+   assops[<span class="string">"CAddAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l + r; };
+   assops[<span class="string">"CSubAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l - r; };
+   assops[<span class="string">"CShlAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l * <span class="number">2</span> * r; };
+   assops[<span class="string">"CShrAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l / <span class="number">2</span> * r; };
+   assops[<span class="string">"CAndAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &amp; r; };
+   assops[<span class="string">"COrAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l | r; };
+   assops[<span class="string">"CXorAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l ^ r; };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Binary operators</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> binops = {};
+   binops[<span class="string">"CMulOp"</span>] = <span class="keyword">function</span>(l, r) { <span class="keyword">return</span> l * r; }
+   binops[<span class="string">"CDivOp"</span>] = <span class="keyword">function</span>(l, r) { <span class="keyword">return</span> l / r; }
+   binops[<span class="string">"CRmdOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l % r; };
+   binops[<span class="string">"CAddOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l + r; };
+   binops[<span class="string">"CSubOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l - r; };
+   binops[<span class="string">"CShlOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l * <span class="number">2</span> * r; };
+   binops[<span class="string">"CShrOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l / <span class="number">2</span> * r; };
+   binops[<span class="string">"CAndOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &amp; r; };
+   binops[<span class="string">"COrAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l | r; };
+   binops[<span class="string">"CXorAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l ^ r; };
+   binops[<span class="string">"CLndOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &amp;&amp; r; };
+   binops[<span class="string">"CLorOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l || r; };
+   binops[<span class="string">"CLeOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &lt; r; };
+   binops[<span class="string">"CGrOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &gt; r; };
+   binops[<span class="string">"CLeqOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &lt;= r; };
+   binops[<span class="string">"CGeqOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &gt;= r; };
+   binops[<span class="string">"CEqOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l === r; };
+   binops[<span class="string">"CNeqOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l !== r; };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Unary operators; these need the heap and an address for ++ and -- ops</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> unops = {};
+   unops[<span class="string">"CPreIncOp"</span>] = <span class="keyword">function</span>(addr, heap) { heap[addr] = heap[addr] + <span class="number">1</span>; <span class="keyword">return</span> {val: heap[addr] + <span class="number">1</span>, heap: heap}; }
+   unops[<span class="string">"CPreDecOp"</span>] = <span class="keyword">function</span>(addr, heap) { heap[addr] = heap[addr] - <span class="number">1</span>; <span class="keyword">return</span> {val: heap[addr] - <span class="number">1</span>, heap: heap}; }
+   unops[<span class="string">"CPostIncOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">var</span> u = heap[addr]; heap[addr] = u + <span class="number">1</span>; console.log(heap); <span class="keyword">return</span> {val: u, heap: heap}; }
+   unops[<span class="string">"CPostDecOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">var</span> u = heap[addr]; heap[addr] = u - <span class="number">1</span>; <span class="keyword">return</span> {val: u, heap: heap}; }
+   unops[<span class="string">"CAdrOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: addr, heap: heap}; }
+   unops[<span class="string">"CIndOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: heap[addr], heap: heap}; }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>TODO ignoring these two for now because what is unary +?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   unops[<span class="string">"CPlusOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: heap[addr], heap: heap}; }
+   unops[<span class="string">"CMinOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: heap[addr], heap: heap}; }
+   unops[<span class="string">"CCompOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: ~heap[addr], heap: heap}; }
+   unops[<span class="string">"CNegOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: -heap[addr], heap: heap}; }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>The sizes of some common types (on my computer) for sizeof</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> sizes = {};
+   sizes[<span class="string">"CVoidType"</span>] = <span class="number">1</span>;
+   sizes[<span class="string">"CCharType"</span>] = <span class="number">1</span>;
+   sizes[<span class="string">"CShortType"</span>] = <span class="number">2</span>;
+   sizes[<span class="string">"CIntType"</span>] = <span class="number">4</span>;
+   sizes[<span class="string">"CLongType"</span>] = <span class="number">4</span>;
+   sizes[<span class="string">"CFloatType"</span>] = <span class="number">4</span>;
+   sizes[<span class="string">"CDoubleType"</span>] = <span class="number">8</span>;
+   sizes[<span class="string">"CSignedType"</span>] = <span class="number">2</span>;
+   sizes[<span class="string">"CUnsigType"</span>] = <span class="number">4</span>;
+   sizes[<span class="string">"CBoolType"</span>] = <span class="number">1</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>Monadic plumbing, essentially: forM nodes eval</p>
+<p>sequenceEval :: ([Node], State) -&gt; ([Value], State)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">sequenceEval</span><span class="params">(nodes, state)</span> {</span>
+      <span class="keyword">var</span> vals = [];
+      <span class="keyword">var</span> ret;
+
+      <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; nodes.length; i++) {
+         ret = eval(nodes[i], state);
+         vals.push(ret.val);
+         state = ret.state;
+      }
+
+      <span class="keyword">return</span> {vals: vals, state: state};
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>varLookup :: (Name, Stack) -&gt; Addr</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">varLookup</span><span class="params">(varname, stack)</span> {</span>
+      <span class="keyword">var</span> locals = stack[<span class="number">0</span>],
+          globals = _(stack).last();
+
+      <span class="keyword">if</span> (!_(locals[varname]).isUndefined())
+         <span class="keyword">return</span> locals[varname];
+      <span class="keyword">else</span> <span class="keyword">if</span> (!_(globals[varname]).isUndefined())
+         <span class="keyword">return</span> globals[varname];
+      <span class="keyword">else</span>
+         <span class="keyword">return</span> <span class="literal">undefined</span>;
+   };
+
+   <span class="function"><span class="keyword">function</span> <span class="title">initialValue</span><span class="params">(type)</span> {</span>
+      <span class="keyword">var</span> val = <span class="number">0</span>;
+
+      <span class="comment">/*
+       * if (type = blah) {
+       * }
+       *
+       */</span>
+
+      <span class="keyword">return</span> val;
+   }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>Globals are the first entry of the stack</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">AddGlobalToEnv</span><span class="params">(name, value, state)</span> {</span>
+      state.stack[<span class="number">0</span>][name] = state.next;
+      state.heap[state.next] = value;
+      state.next = state.next + <span class="number">1</span>;
+      <span class="keyword">return</span> state;
+   }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Returns an ADDRESS IN THE HEAP</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">evalLhs</span><span class="params">(lhs, state)</span> {</span>
+      <span class="keyword">var</span> val = <span class="literal">undefined</span>;
+
+      <span class="keyword">switch</span> (lhs[<span class="string">"node"</span>]) {
+         <span class="keyword">case</span> <span class="string">"CVar"</span>:
+            val = varLookup(util.unquotify(lhs[<span class="string">"name"</span>]), state.stack);
+            <span class="keyword">break</span>;
+         <span class="keyword">case</span> <span class="string">"CIndex"</span>:
+            <span class="keyword">var</span> index = eval(lhs[<span class="string">"index"</span>], state);
+            <span class="keyword">var</span> array = evalLhs(lhs[<span class="string">"array"</span>], index.state);
+            state = array.state;
+            val = array.val + index.val;
+            <span class="keyword">break</span>;
+         <span class="keyword">case</span> <span class="string">"CMember"</span>:
+            <span class="keyword">var</span> member = util.unquotify(lhs[<span class="string">"member"</span>]);
+            <span class="keyword">var</span> structR = evalLhs(lhs[<span class="string">"struct"</span>], state);
+            <span class="keyword">var</span> struct_addr = structR.val;
+            state = structR.state;
+
+            val = struct_addr + util.getSMemberOffset(member, state.heapinfo[struct_addr]);
+            <span class="keyword">break</span>;
+      }
+
+      <span class="keyword">return</span> {val: val, state: state};
+   }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>TODO: rest of specifiers</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">evalSpecifiers</span><span class="params">(specs, state)</span> {</span>
+      <span class="keyword">var</span> type = <span class="string">''</span>;
+
+      _(specs).map(<span class="keyword">function</span>(s) {
+         <span class="keyword">switch</span>(s[<span class="string">'spec'</span>][<span class="string">'node'</span>]) {
+            <span class="keyword">case</span> <span class="string">'CUnsigType'</span>:
+               type += <span class="string">'unsigned '</span>;
+               <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'CIntType'</span>:
+               type += <span class="string">'int '</span>;
+               <span class="keyword">break</span>;
+            <span class="keyword">default</span>:
+               type += <span class="string">'UNKNOWN '</span>;
+               <span class="keyword">break</span>;
+         }
+      });
+
+      type = type.slice(<span class="number">0</span>, type.length - <span class="number">1</span>);
+   }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>evalNode :: Map Node EvalFunction</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   evalNode = {};
+   evalNode[<span class="string">"CTranslUnit"</span>] = <span class="keyword">function</span>(node, state) {
+      
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>eval index to the offset,
+array to the address of the array,
+then return the address which is the array address + offset</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CIndex"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> index = eval(node[<span class="string">"index"</span>], state);
+      <span class="keyword">var</span> array = evalLhs(node[<span class="string">"array"</span>], index.state);
+      <span class="keyword">var</span> addr = array.val + index.val;
+      state = array.state;
+
+      <span class="keyword">return</span> {val: state.heap[addr], state: state};
+   }
+
+   evalNode[<span class="string">"CFunDef"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> {val: node, state: state};
+   };
+
+   evalNode[<span class="string">"CMulOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a * b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CDivOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a / b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CRmdOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a % b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CAndOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a &amp;&amp; b, state: state};
+      };
+   };
+   evalNode[<span class="string">"COrOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a || b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CXorOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a ^ b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CNeqOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a !== b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CEqOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a === b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CGeqOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a &gt;= b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CLeqOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a &lt;= b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CLeOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a &lt; b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CGrOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a &gt; b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CAddOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a + b, state: state};
+      };
+   };
+   evalNode[<span class="string">"CSubOp"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+         <span class="keyword">return</span> {val: a -b, state: state};
+      };
+   };
+
+   <span class="comment">/**
+    * eval'ing Expressions
+    * CExprs
+    */</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>Return the value of the variable in the heap</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CVar"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> {val: state.heap[varLookup(util.unquotify(node[<span class="string">"name"</span>]), state.stack)], state: state};
+   };
+
+   evalNode[<span class="string">"CConst"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> eval(node[<span class="string">"const"</span>], state);
+   };
+
+
+   evalNode[<span class="string">"CUnary"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> val = eval(node[<span class="string">"expr"</span>], state);
+      <span class="keyword">var</span> v = val.val;
+      <span class="keyword">var</span> ret;
+
+      <span class="keyword">var</span> remove = <span class="literal">false</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>this is a variable of some kind, not sure if this still happens</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">if</span> (_.isString(v))
+         addr = varLookup(v, state.stack);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>You can do eg 1++ which shouldn&#39;t actually store anywhere, just temporary</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">else</span> { 
+         remove = <span class="literal">true</span>;
+         state.heap[-<span class="number">1</span>] = v;
+         addr = -<span class="number">1</span>;
+      }
+
+      <span class="keyword">if</span> (remove) {
+         <span class="keyword">delete</span> state.heap[-<span class="number">1</span>];
+      }
+
+      <span class="keyword">return</span> {val: ret, state: val.state};
+   };
+
+   evalNode[<span class="string">"CBinary"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> erand1 = eval(node[<span class="string">"erand1"</span>], state),
+          erand2 = eval(node[<span class="string">"erand2"</span>], erand1.state);
+      state = erand2.state;
+
+      <span class="keyword">var</span> val = binops[node[<span class="string">"op"</span>]](erand1.val, erand2.val);
+
+      <span class="keyword">return</span> {val: val, state: erand2.state};
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>Calling a function</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CCall"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> arg, fun,
+          fun_name = util.unquotify(node[<span class="string">"function"</span>][<span class="string">"name"</span>]);
+      <span class="keyword">var</span> fun_addr;
+
+      console.log(<span class="string">"Calling "</span> + fun_name);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>functions should be defined in globals which is last stack frame</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      fun_addr = varLookup(fun_name, state.stack);
+      <span class="keyword">if</span> (_(fun_addr).isUndefined()) {
+         console.log(<span class="string">"No function defined"</span>);
+         state.kont = <span class="keyword">function</span>(ui) {
+            ui.tell(<span class="string">"Error in CCall"</span>);
+         }
+         <span class="keyword">return</span> {val: <span class="literal">undefined</span>, state: state};
+      }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>Fun is likely a CVar, meaining the node returned is a CFunDef</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      fun = eval(state.heap[fun_addr], state);
+      state = fun.state;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>Evaluate each argument and put it in the heap.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; node[<span class="string">"args"</span>].length; i++) {
+         arg = eval(node[<span class="string">"args"</span>][i], state);
+         state = arg.state;
+         state.heap[state.next] = arg.val;
+         state.next += <span class="number">1</span>;
+      }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>Add a new frame onto the stack</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      _(state.stack).unshift({});
+      state.control = fun.val;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>frame info</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      _(state.frames).unshift({name: fun_name, params: state.heapinfo[fun_addr].params});
+
+      state.kont = <span class="keyword">function</span>(ui) {
+         ui.tell(<span class="string">'About to call '</span> + fun_name);
+      };
+
+      <span class="keyword">return</span> { val: fun.val, state: state };
+   };
+
+   evalNode[<span class="string">"CAssign"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> lhs = evalLhs(node[<span class="string">"lvalue"</span>], state);
+      <span class="keyword">var</span> rval = eval(node[<span class="string">"rvalue"</span>], lhs.state);
+      <span class="keyword">var</span> addr = lhs.val;
+      <span class="keyword">var</span> rhs = rval.val;
+      state = rval.state;
+      
+      <span class="keyword">var</span> op = assops[node[<span class="string">"op"</span>]];
+
+      <span class="keyword">var</span> val = op(state.heap[addr], rhs);
+      state.heap[addr] = val;
+
+      <span class="keyword">return</span> {val: val, state: state};
+   };
+
+   evalNode[<span class="string">"CExpr"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> eval(node[<span class="string">"expr"</span>], state);
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p>I don&#39;t believe this is used</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CWhile"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> guard = eval(node[<span class="string">"guard"</span>], state);
+      <span class="keyword">var</span> next;
+
+      <span class="keyword">while</span> (isTrue(guard.val)) {
+         next = eval(node[<span class="string">"next"</span>], guard.state);
+         guard = eval(node[<span class="string">"guard"</span>], next.state);
+      }
+      <span class="keyword">return</span> {val: {}, state: guard.state};
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>This one either</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CFor"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> init = eval(node[<span class="string">"init"</span>], state);
+      <span class="keyword">var</span> guard = eval(node[<span class="string">"guard"</span>], init.state);
+      <span class="keyword">var</span> stat;
+
+      <span class="keyword">while</span> (isTrue(guard.val)) {
+         stat = eval(node[<span class="string">"next"</span>], guard.state);
+         guard = eval(node[<span class="string">"guard"</span>], stat.state);
+      }
+      <span class="keyword">return</span> {val: {}, state: guard.state};
+   };
+
+   evalNode[<span class="string">"CIf"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> ret = eval(node[<span class="string">"expr"</span>], state);
+
+      <span class="keyword">if</span> (isTrue(ret.val))
+         <span class="keyword">return</span> eval(node[<span class="string">"true"</span>], expr_ret.state);
+      <span class="keyword">else</span>
+         <span class="keyword">return</span> eval(node[<span class="string">"false"</span>], expr_ret.state);
+   };
+
+   evalNode[<span class="string">"CReturn"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> eval(node[<span class="string">"expr"</span>], state);
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>CInit is involved in initializing a variable</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CInit"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> eval(node[<span class="string">"assignment"</span>], state);
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>Most basic values</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CCharConst"</span>] = evalNode[<span class="string">"CFloatConst"</span>] = evalNode[<span class="string">"CStrConst"</span>] = evalNode[<span class="string">"CIntConst"</span>] = <span class="keyword">function</span>(node, state) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>we know val is a CInteger, doesn&#39;t change state</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">return</span> eval(node[<span class="string">"val"</span>], state);
+   };
+
+   evalNode[<span class="string">"CStr"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> {val: node[<span class="string">"string"</span>], state: state};
+   };
+
+   evalNode[<span class="string">"CStrLit"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> {val: node[<span class="string">"string"</span>], state: state};
+   };
+
+   evalNode[<span class="string">"CInteger"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">var</span> radix;
+      <span class="keyword">switch</span> (node[<span class="string">"base"</span>]) {
+         <span class="keyword">case</span> <span class="string">"d"</span>:
+            radix = <span class="number">10</span>;
+            <span class="keyword">break</span>;
+         <span class="keyword">case</span> <span class="string">"o"</span>:
+            radix = <span class="number">8</span>;
+            <span class="keyword">break</span>;
+         <span class="keyword">case</span> <span class="string">"x"</span>:
+            radix = <span class="number">16</span>;
+            <span class="keyword">break</span>;
+      }
+      <span class="keyword">return</span> {val: parseInt(node[<span class="string">"int"</span>], radix), state: state};
+   };
+
+   evalNode[<span class="string">"CChar"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> {val: node[<span class="string">"char"</span>], state: state};
+   };
+
+   evalNode[<span class="string">"CChars"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> {val: node[<span class="string">"chars"</span>], state: state};
+   };
+
+   evalNode[<span class="string">"CFloat"</span>] = <span class="keyword">function</span>(node, state) {
+      <span class="keyword">return</span> {val: parseFloat(node[<span class="string">"float"</span>]), state: state};
+   };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <p>Eval is an easy wrapper around evalNode</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">eval</span><span class="params">(node, state)</span> {</span>
+      console.log(<span class="string">"Evaling "</span> + node[<span class="string">"node"</span>]);
+      <span class="keyword">if</span> (_.isUndefined(evalNode[node[<span class="string">"node"</span>]]))
+         <span class="keyword">throw</span> <span class="string">"evalNode "</span> + node[<span class="string">"node"</span>] + <span class="string">" not defined."</span>;
+      <span class="keyword">return</span> evalNode[node[<span class="string">"node"</span>]](node, state);
+   }
+
+   <span class="function"><span class="keyword">function</span> <span class="title">isThunk</span><span class="params">(node)</span> {</span>
+      <span class="keyword">return</span> node[<span class="string">"node"</span>] === <span class="string">"CThunk"</span>;
+   }
+
+   <span class="function"><span class="keyword">function</span> <span class="title">isFunction</span><span class="params">(node)</span> {</span>
+      <span class="keyword">return</span> node[<span class="string">"node"</span>] === <span class="string">"CFunDef"</span>;
+   }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>Haven&#39;t done this yet, but it should eval an LHS to possibly be a function returning an address
+ie function that returns a pointer.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">evalOrthunkLhs</span><span class="params">(node, state, hole)</span> {</span>
+
+   }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <p>evalOrThunk is used to evaluate a node which could be a function.
+evalOrThunk :: (Node, State, String, Node) -&gt; (Node, State)
+Node is what&#39;s being evaluated 
+  (ie in a CAssign it could be the rvalue that might be a function returning a value)
+Hole is the attribute in thunker where the thunk should be filled in (rvalue)
+Thunker is the actual node that is suspended and should be filled in later (CAssign)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">evalOrThunk</span><span class="params">(node, state, hole, thunker)</span> {</span>
+      <span class="keyword">if</span> (!_.isUndefined(thunker[<span class="string">"hole"</span>]) &amp;&amp; thunker[<span class="string">"hole"</span>] === <span class="string">"filled"</span>) {
+         <span class="keyword">return</span> {val: thunker[hole], state: state};
+      }
+
+      <span class="keyword">var</span> enode = eval(node, state);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <p>not a var, not a func</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">if</span> (_.isUndefined(enode.val[<span class="string">"node"</span>]) || !isFunction(enode.val))
+         <span class="keyword">return</span> enode;
+
+      state = enode.state;
+      console.log(<span class="string">"Creating thunk"</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <p>Create a new CThunk node to be placed on the dump.
+eval is what the node previously was; the hole attribute will 
+be filled in and placed back on the dump.
+hole is the attribute value to fill in when CThunk is evaluated</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">var</span> newNode = {};
+      newNode[<span class="string">"node"</span>] = <span class="string">"CThunk"</span>;
+      newNode[<span class="string">"eval"</span>] = _.cloneDeep(thunker);
+      newNode[<span class="string">"hole"</span>] = hole;
+      newNode[<span class="string">"line"</span>] = node[<span class="string">"line"</span>];
+      newNode[hole] = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <p>Put the node on the dump, push the function into a new dump frame</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      _(state.dump).last().unshift(newNode);
+      _(state.dump).push([enode.val]);
+
+      state.kont = <span class="keyword">function</span>(ui, cm) {
+         ui.tell(<span class="string">'Created thunk on assign'</span>);
+         ui.hilite_line(newNode[<span class="string">"line"</span>], cm);
+      }
+      <span class="keyword">return</span> {val: newNode, state: state};
+   };
+
+   <span class="keyword">return</span> {
+      eval: eval,
+      evalOrThunk: evalOrThunk,
+      evalLhs: evalLhs,
+      assops: assops,
+      unops: unops,
+      binops: binops,
+      sizes: sizes,
+      isThunk: isThunk
+   };
+});</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

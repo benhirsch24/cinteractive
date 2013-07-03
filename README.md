@@ -17,3 +17,6 @@ Haskell packages:
 * aeson
 * utf8-string
 * language-c (happy, alex which are a Haskell parser generator and lexer respectively are also required)
+
+
+[Here is an instance of it running!](http://ec2-50-112-16-84.us-west-2.compute.amazonaws.com)

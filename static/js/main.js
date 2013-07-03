@@ -194,7 +194,7 @@ requirejs(["ui/ui", "ui/prettyprint", "interp/stepper", "ui/tooltips"], function
 
          $('#source').empty();
 
-         $.post('http://localhost:3000/parse', CM.getValue())
+         $.post('/parse', CM.getValue())
          .success(function(data) {
             var rstate = receiveAST(data);
             var state    = rstate;

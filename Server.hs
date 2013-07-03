@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
+module Main where
 import Language
-import System.Environment (lookupEnv)
+import System.Environment (getEnv)
 import Data.Maybe (fromMaybe)
 import Data.Aeson
 import Data.Aeson.Encode (fromValue)
@@ -47,7 +48,7 @@ resolveContentType "js"  = textJS
 resolveContentType _     = textPlain
 
 main = do
-   port <- read <$> fromMaybe "3000" <$> lookupEnv "PORT"
+   port <- fromIntegral <$> read <$> getEnv "PORT"
    putStrLn $ "Listening on port " ++ show port
    run port app
 
@@ -72,7 +73,7 @@ parse = do
    body <- await
    return $ case body of
       Nothing -> response400 ctPlain $ copyByteString "Error! Nothing received"
-      Just body -> let ast = byteStringToAST body
+      Just body -> let ast = bsToAST body
                    in  case ast of
                            Right ast -> let json = fromLazyText . toLazyText . fromValue . toJSON $ ast
                                         in  response200 ctJson json

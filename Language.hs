@@ -280,8 +280,8 @@ instance ToJSON CChar where --i
 instance ToJSON CFloat where --i
    toJSON (CFloat float) = object ["node" .= pack "CFloat", "float ".= pshow float]
 
-byteStringToAST :: BS.ByteString -> Either ParseError CTranslUnit
-byteStringToAST bs = parseC bs (initPos "cfile.c")
+bsToAST :: BS.ByteString -> Either ParseError CTranslUnit
+bsToAST bs = parseC bs (initPos "cfile.c")
 
 partialAST :: BS.ByteString -> Either ParseError (CStat, [Name])
 partialAST bs = execParser statementP bs (initPos "partial.c") builtinTypeNames newNameSupply

@@ -72,7 +72,7 @@ define(function() {
    });
 
    // Prints a single value in the heap.
-   Handlebars.registerHelper('heapval', function(val, info) {
+   Handlebars.registerHelper('heapval', function(val, info, isVisible) {
       var str_templ, templ, context = {};
 
       switch(info["node"]) {
@@ -91,8 +91,8 @@ define(function() {
                return val;
             }
             // otherwise give a link to expand/collapse
-            str_templ = "<a href='#' class='compound_key' data-compound='{{name}}'>Expand/Collapse Array</a>";
-            context = {name: info.name};
+            str_templ = "<a href='#' class='compound_key' data-compound='{{name}}' {{#if isVisible }} data-visible='true' {{/if}}>Expand/Collapse Array</a>";
+            context = {name: info.name, isVisible: isVisible};
             break;
          case "CDecl":
             return val;
@@ -102,8 +102,8 @@ define(function() {
             if (!(_.isUndefined(val)))
                return val;
 
-            str_templ = "<a href='#' class='compound_key' data-compound='{{name}}'>Expand/Collapse Struct</a>";
-            context = {name: info.name};
+            str_templ = "<a href='#' class='compound_key' data-compound='{{name}}' {{#if isVisible }} data-visible='true' {{/if}}>Expand/Collapse Struct</a>";
+            context = {name: info.name, isVisible: isVisible};
             break;
       };
       templ = Handlebars.compile(str_templ);
@@ -123,10 +123,12 @@ define(function() {
       var str = "<table class='table table-bordered table-striped'><caption>{{> signature}}</caption>";
 
       var vars = "{{#stackvars stack_frame}}";
-         vars += "<tr class='frame_var' {{#if isCpound}} {{#unless isKey}}data-var='{{info.name}}'{{/unless}}{{/if}} style='{{#if isCpound}}{{#unless isKey}} display:none {{/unless}}{{/if}}'>";
+         vars += "<tr class='frame_var'" +
+                 " {{#if isCpound}} {{#unless isKey}} data-var='{{info.name}}' {{/unless}} {{/if}}" +
+                 " style='{{#if isCpound}}{{#unless isKey}}{{#unless isVisible}} display:none {{/unless}}{{/unless}}{{/if}}'>";
          vars += "<td class='var_addr'><a href='#' data-addr='{{addr}}'>{{addr}}</a></td>";
          vars += "<td class='variable'>{{print_type info.type isKey offset}} {{name}}</td>";
-         vars += "<td class='value'>{{{heapval value info}}}</td></tr>{{/stackvars}}";
+         vars += "<td class='value'>{{{heapval value info isVisible}}}</td></tr>{{/stackvars}}";
 
       var end = "</table>";
       var templ = str + vars + end;

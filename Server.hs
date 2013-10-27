@@ -48,7 +48,8 @@ resolveContentType "js"  = textJS
 resolveContentType _     = textPlain
 
 main = do
-   port <- fromIntegral <$> read <$> getEnv "PORT"
+   --port <- fromIntegral <$> read <$> getEnv "PORT"
+   port <- return 8000
    putStrLn $ "Listening on port " ++ show port
    run port app
 

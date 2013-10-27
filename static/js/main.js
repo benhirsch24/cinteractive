@@ -176,42 +176,42 @@ requirejs(["ui/ui", "ui/prettyprint", "interp/stepper", "ui/tooltips"], function
       });
 
       $('.autoplay').click(function() { pause = false; autoPlay(); });
-      $('.undo-a-step').click(function() { if (play_i < _(glStepColl).size()) { play_i -= 1; ui.uiStep(glStepColl[play_i]); } });
+      $('.undo-a-step').click(function() { if (play_i < _(glStepColl).size()) { ui.uiStep(glStepColl[play_i]); play_i -= 1; } });
       $('.do-a-step').click(function() { if (play_i < _(glStepColl).size()) { ui.uiStep(glStepColl[play_i]); play_i += 1; } });
       $('.stop').click(function() { play_i = _(glStepColl).size(); });
       $('.pause').click(function() { pause = true; });
-
       $("#compile").click(function() {
          $('#functions').empty();
-         $('.alert').hide();
-         $('.collected a').text('Data Received, Click to Collect Steps');
-         $('.collected a').one('click', function() {
-            glStepColl = collectSteps(glState, glStepColl);
-            glState = glStepColl[0];
-
-            $('.collected a').html('Steps compiled');
-         });
-
          $('#source').empty();
+         $('.alert').hide();
 
          $.post('/parse', CM.getValue())
-         .success(function(data) {
-            var rstate = receiveAST(data);
-            var state    = rstate;
+            .success(function(data) {
+               var rstate = receiveAST(data);
+               var state    = rstate;
 
-            glState = state;
-            ui.uiStep(state);
+               glState = state;
+               ui.uiStep(state);
 
-            curStep = 0;
+               curStep = 0;
 
-            var newstack = [{}];
-            glState.stack = newstack.concat(glState.stack);
-            glState.frames.unshift({name: 'main', params: state.heapinfo[_(state.stack).last()["main"]].params});
-         })
-         .error(function(err) {
-            $('.alert').html(err);
-            $('.alert').toggle();
-         });
+               var newstack = [{}];
+               glState.stack = newstack.concat(glState.stack);
+               glState.frames.unshift({name: 'main', params: state.heapinfo[_(state.stack).last()["main"]].params});
+
+               glStepColl = collectSteps(glState, glStepColl);
+               glState = glStepColl[0];
+
+               $('#player').slideDown();
+               $('#run_info').slideDown();
+               $('#whatsgoingon').empty();
+            })
+            .error(function(err) {
+               $('#player').fadeOut();
+               $('#run_info').fadeOut();
+               $('.alert').html(err);
+               $('.alert').hide();
+            });
          return false;
       });
 
@@ -229,6 +229,14 @@ requirejs(["ui/ui", "ui/prettyprint", "interp/stepper", "ui/tooltips"], function
    $(document).on('click', '.compound_key', function(e) {
       var key = $(e.currentTarget);
       var name = key.data('compound');
-      $('[data-var="' + name + '"]').toggle();
+      var el = $('[data-var="' + name + '"]');
+      el.toggle();
+
+      if ($(el[0]).css('display') === 'none')
+         key.data('visible', 'false');
+      else
+         key.data('visible', 'true');
    });
+
+   $(document).scrollTop($('#code').offset().top);
 });

@@ -25,101 +25,120 @@
          .CodeMirror {
             border: 1px solid #ddd;
             height: auto;
-            width: 50em;
+            width: 100%;
          }
       </style>
    </head>
    <body>
-      <div class="navbar navbar-inverse">
-         <div class="navbar-inner">
-            <a class="brand" href="#">C Interactive Interpreter</a>
-            <ul class="nav">
-               <li class="active"><a href="#" id="compile">Compile!</a></li>
-               <li class="collected"><a href="#">No Data</a></li>
-               <li><a href="docs/main.html">View the Documentation</a></li>
-               <li><a href="http://github.com/benhirsch24/cinteractive">View the Source</a></li>
-               <li><a href="#">Report Bugs</a></li>
-            </ul>
-            <ul class="nav pull-right">
-               <li class="active"><a href="#" id="options">Options</a></li>
-            </ul>
-         </div>
-      </div>
+      <nav class="navbar navbar-default" role="navigation">
+         <a class="navbar-brand" href="#">C Interactive Interpreter</a>
+         <ul class="nav navbar-nav">
+            <li class="active"><a href="#" id="compile">Compile!</a></li>
+            <li><a href="docs/main.html">View the Documentation</a></li>
+            <li><a href="http://github.com/benhirsch24/cinteractive">View the Source</a></li>
+            <li><a href="https://github.com/benhirsch24/cinteractive/issues">Report Bugs</a></li>
+         </ul>
+         <ul class="nav navbar-nav navbar-right">
+            <li class="active"><a href="#" id="options">Options</a></li>
+         </ul>
+      </nav>
       <div class="opts_menu row">
-         <div class="span4">
+         <div class="col-md-4">
             <label for="autoclosebrackets">Auto Close Brackets
+            </label>
                <input type="checkbox" checked="checked" id="autoclose" name="autoclosebrackets">
-            </label>
+            <br>
             <label for="tooltips">Enable/Disable Tooltips
-               <input type="checkbox" checked="checked" id="tooltips" name="tooltips">
             </label>
+               <input type="checkbox" checked="checked" id="tooltips" name="tooltips">
          </div>
       </div>
-      <br>
-      <div class="row-fluid content">
-         <div class="span6">
-            <div class="alert alert-error" style="display:none;"></div>
-      <textarea id="code">
-unsigned int global_var, global_twar = 3;
+      <div class="container">
+         <br>
+         <div id="player" class="row">
+            <div id="codehint" class="col-xs-3"></div>
+            <div class="col-xs-6">
+               <div style="padding:1em">
+                  <input type="range" name="step" id="stepper" min="1" max="1" value="1">
+                  <ul id="buttons">
+                     <li><button type="button" class="btn btn-default autoplay">
+                        <span class="glyphicon glyphicon-play"></span>
+                     </button></li>
+                     <li><button type="button" class="btn btn-default undo-a-step">
+                        <span class="glyphicon glyphicon-backward"></span>
+                     </button></li>
+                     <li><button type="button" class="btn btn-default do-a-step">
+                        <span class="glyphicon glyphicon-forward"></span>
+                     </button></li>
+                     <li><button type="button" class="btn btn-default stop">
+                        <span class="glyphicon glyphicon-stop"></span>
+                     </button></li>
+                     <li><button type="button" class="btn btn-default pause">
+                        <span class="glyphicon glyphicon-pause"></span>
+                     </button></li>
+                  </ul>
+                  <div id="whatsgoingon"></div>
+               </div>
+            </div>
+         </div>
+         <div class="row" id="run_info">
+            <div class="col-xs-6" id="frames_container">
+               <h4 style="text-align:center;" id="function_frames" data-toggle='tooltip'>Function Frames</h4>
+               <ul id="frames">
+               </ul>
+            </div>
 
-int dup(int n) {
-   n = n + n;
-   return n;
-}
+            <div class="col-xs-6" id="mem">
+               <h4 data-toggle="tooltip" style="text-align:center">Memory</h4>
+               <table class="table table-bordered" id="heap">
+                  <thead>
+                     <tr>
+                        <th>Entry</th>
+                        <th>Value</th>
+                     </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+               </table>
+            </div>
+         </div>
+         <div class="row content">
+            <div class="col-xs-8">
+               <h3 style="padding:0 .5em 0 .3em; display:inline;" id="thecode">Code</h3> <a href="#stepper">Jump back</a>
+               <div class="alert alert-error" style="display:none;"></div>
+               <textarea id="code">
+   unsigned int global_var, global_twar = 3;
 
-struct point {
-   int x;
-   int y;
-};
-
-int main() {
-   int num;
-   int array[10];
-   struct point myPoint;
-
-   int i;
-
-   for (i = 0; i < 5; i++) {
-      array[i] = dup(i);
-      myPoint.x = array[i];
+   int dup(int n) {
+      n = n + n;
+      return n;
    }
 
-   return 0;
-}</textarea>
-         <div style="padding:1em">
-            <input type="range" name="step" id="stepper" min="1" max="1" value="1">
-            <ul id="buttons">
-               <li><a href="#" class='autoplay'><i class="icon-play"></i></a></li>
-               <li><a href="#" class='undo-a-step'><i class="icon-backward"></i></a></li>
-               <li><a href="#" class='do-a-step'><i class="icon-forward"></i></a></li>
-               <li><a href="#" class='stop'><i class="icon-stop"></i></a></li>
-               <li><a href="#" class="pause"><i class="icon-pause"></i></a></li>
-            </ul>
-            <div id="whatsgoingon"></div>
+   struct point {
+      int x;
+      int y;
+   };
+
+   int main() {
+      int num;
+      int array[10];
+      struct point myPoint;
+
+      int i;
+
+      for (i = 0; i < 5; i++) {
+         array[i] = dup(i);
+         myPoint.x = array[i];
+      }
+
+      return 0;
+   }
+   </textarea>
+            </div>
+
          </div>
-      </div>
-
-      <div class="span3" id="frames_container">
-         <h4 style="text-align:center;" id="function_frames" data-toggle='tooltip'>Function Frames</h4>
-         <ul id="frames">
-         </ul>
-      </div>
-
-      <div class="span3" id="mem">
-         <h4 data-toggle="tooltip" style="text-align:center">Memory</h4>
-         <table class="table table-bordered" id="heap">
-            <thead>
-               <tr>
-                  <th>Entry</th>
-                  <th>Value</th>
-               </tr>
-            </thead>
-            <tbody>
-            </tbody>
-         </table>
-      </div>
-   </div>
-      <div id="ast">
+         <div id="ast">
+         </div>
       </div>
    </body>
 </html>

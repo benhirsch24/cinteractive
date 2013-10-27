@@ -198,7 +198,7 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       node["hole"] = "filled";
       node[state.control["hole"]] = state.ret;
       state.kont = function(ui, cm) {
-         ui.tell('Executing thunk, filling hole ' + hole);
+         ui.tell('Executing thunk, filling hole ' + hole, line);
          ui.hilite_line(line);
       };
 
@@ -217,7 +217,7 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       var line = state.control['line'];
       stack = push_params(state);
       state.kont = function(ui, cm) {
-         ui.tell('Calling Function: ' + util.unquotify(name));
+         ui.tell('Calling Function: ' + util.unquotify(name), line);
          ui.hilite_line(line);
       };
       state.dump = _(state.dump).push(_(state.control["statements"]["block_items"]).cloneDeep());
@@ -338,7 +338,7 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
 
       state.control = undefined;
       state.kont = function(ui, cm) {
-         ui.tell('Declared: ' + names);
+         ui.tell('Declared: ' + names, line);
          ui.hilite_line(line);
       };
 
@@ -390,7 +390,7 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
 
       state.kont = function(ui, cm) {
          ui.hilite_line(line);
-         ui.tell(msg);
+         ui.tell(msg, line);
       };
       return state;
    };
@@ -422,7 +422,7 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       state.control = undefined;
       state.heap[lvalue.val] = val;
       state.kont = function(ui, cm) {
-         ui.tell('Changed var at ' + lvalue.val + ' to ' + val);
+         ui.tell('Changed var at ' + lvalue.val + ' to ' + val, line);
          ui.hilite_line(line);
       };
       return state;
@@ -447,7 +447,7 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       var line = state.control.line;
       state.dump = _(state.dump).push(state.control["block_items"]);
       state.kont = function(ui, cm) {
-         ui.tell('Compound statements');
+         ui.tell('Compound statements', line);
          ui.hilite_line(line);
       };
       state.control = undefined;
@@ -484,7 +484,7 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
 
       state.kont = function(ui, cm) {
          ui.hilite_line(line);
-         ui.tell(msg);
+         ui.tell(msg, line);
       };
 
       return state;
@@ -499,13 +499,13 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
 
       if (guard.val === 0 || !guard.val) {
          state.kont = function(ui, cm) {
-            ui.tell("Condition was false, continuing");
+            ui.tell("Condition was false, continuing", line);
             ui.hilite_line(line);
          };
       } else 
       {
          state.kont = function(ui, cm) {
-            ui.tell("Condition was true, looping");
+            ui.tell("Condition was true, looping", line);
             ui.hilite_line(line);
          };
          _(state.dump).last().unshift(_.cloneDeep(state.control));
@@ -530,7 +530,7 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
       }
 
       state.kont = function(ui, cm) {
-         ui.tell(happ);
+         ui.tell(happ, line);
          ui.hilite_line(line);
       };
       state.control = undefined;
@@ -559,7 +559,7 @@ define(["interp/eval", "interp/util"], function(evaler, util) {
 
       _(state.stack).shift();
       state.kont = function(ui, cm) {
-         ui.tell('Returning val: ' + ret.val);
+         ui.tell('Returning val: ' + ret.val, line);
          ui.hilite_line(line);
       };
       state.ret = ret.val;

@@ -19,12 +19,23 @@ define(["ui/templates", "interp/util"], function(templates, util) {
       var stack_frame = [];
       _.forEach(state.stack[frameIdx], function(addr, name) {
          if (util.isArray(state.heapinfo[addr])) {
-            _(stack_frame).push({name: name, addr: addr, value: undefined, info: state.heapinfo[addr], isCpound: true, isKey: true});
+            var visible = false;
+            if ($('[data-compound=' + name + ']').data('visible') === 'true' ||
+                $('[data-compound=' + name + ']').data('visible') === true)
+                visible = true;
+
+            _(stack_frame).push({name: name, addr: addr, value: undefined, info: state.heapinfo[addr], isCpound: true, isKey: true, isVisible: visible});
+
             _.range(0, util.getArrayLen(state.heapinfo[addr])).map(function(i) {
-               _(stack_frame).push({name: name, addr: addr + i, value: state.heap[addr + i], info: state.heapinfo[addr], offset: i, isKey: false, isCpound: true});
+               _(stack_frame).push({name: name, addr: addr + i, value: state.heap[addr + i], info: state.heapinfo[addr], offset: i, isKey: false, isCpound: true, isVisible: visible});
             });
          } else if (util.isStruct(state.heapinfo[addr])) {
-            _(stack_frame).push({name: name, addr: addr, value: undefined, info: state.heapinfo[addr], isCpound: true, isKey: true});
+            var visible = false;
+            if ($('[data-compound=' + name + ']').data('visible') === 'true' ||
+                $('[data-compound=' + name + ']').data('visible') === true)
+                visible = true;
+
+            _(stack_frame).push({name: name, addr: addr, value: undefined, info: state.heapinfo[addr], isCpound: true, isKey: true, isVisible: visible});
             _.range(0, util.getStructSize(state.heapinfo[addr])).map(function(i) {
                _(stack_frame).push({name: name, addr: addr + i, value: state.heap[addr + i], info: state.heapinfo[addr], offset: i, isKey: false, isCpound: true});
             });

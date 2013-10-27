@@ -139,9 +139,11 @@ textarea:focus{
 }
 
 .opts_menu {
-   background-color:#000;
+   background-color:#fff;
    padding: 1em;
-   color: #fff;
+   color: #222;
+   border-bottom: 1px solid #eee;
+   box-shadow: 0px 3px 5px 0px #eee;
 }
 
 .opts_menu label {
@@ -156,6 +158,7 @@ textarea:focus{
 }
 
 #buttons {
+   text-align:center;
    list-style:none;
 }
 
@@ -169,5 +172,17 @@ textarea:focus{
 
 #stepper {
    width: 100%;
-   max-width: 500px;
+}
+
+#codehint {
+    padding-left: 1em;
+    padding-top: 1em;
+}
+
+#run_info {
+    display:none;
+}
+
+#player {
+   display: none;
 }

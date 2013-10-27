@@ -1,4 +1,5 @@
 define(["interp/stepper", "ui/prettyprint"], function(stepper, prettyprint) { return function(CM) {
+   var isHintOn = false;
    var numFrames = 0;
    var curLine = 0;
 
@@ -31,24 +32,38 @@ define(["interp/stepper", "ui/prettyprint"], function(stepper, prettyprint) { re
 
    var uiStep = function(state) {
       updateMemory(state);
-      state.kont(kont);
+      state.kont(kontFun);
 
       numFrames = _(state.stack).size();
    };
+   
 
-   var kont = {
-      tell: function(msg) {
-         $('#whatsgoingon').html(msg + '<br>');
+   var kontFun = {
+      tell: function(msg, line) {
+         $('#whatsgoingon').html(msg + '<br><br>');
+         if (line) {
+             $('#whatsgoingon').append('<div class="code_style">' + line + ": " + CM.getLine(line - 1) + '</div>');
+             $('#whatsgoingon').append('<br><a href="#thecode">Jump to code</a>');
+         }
       },
       hilite_line: function(line) {
          CM.removeLineClass(curLine, 'wrap', 'active_line');
          CM.addLineClass(line - 1, 'wrap', 'active_line');
          curLine = line - 1;
+
+         var hint = $('#codehint');
+         hint.empty();
+         _(_.range(curLine - 5, curLine + 5)).forEach(function(l) {
+             if (l > 0) {
+                hint.append(l + ': ' + CM.getLine(l));
+                hint.append('<br>');
+             }
+         });
       }
    };
 
    return {
       uiStep: uiStep,
-      kont: kont
+      kont: kontFun
    };
 }});

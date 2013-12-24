@@ -82,31 +82,31 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>define(<span class="keyword">function</span>() {
-   <span class="keyword">var</span> isArray = <span class="keyword">function</span>(info) {
+            <div class="content"><div class='highlight'><pre>define(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
+   <span class="keyword">var</span> isArray = <span class="function"><span class="keyword">function</span><span class="params">(info)</span> {</span>
       <span class="keyword">return</span> !(_.isUndefined(info)) &amp;&amp; !(_.isUndefined(info[<span class="string">"node"</span>])) &amp;&amp; info[<span class="string">"node"</span>] === <span class="string">"CArrDeclr"</span>;
    };
 
-   <span class="keyword">var</span> getArrayLen = <span class="keyword">function</span>(info) {
-      <span class="keyword">return</span> _.reduce(info.type, <span class="keyword">function</span>(sum, t) {
+   <span class="keyword">var</span> getArrayLen = <span class="function"><span class="keyword">function</span><span class="params">(info)</span> {</span>
+      <span class="keyword">return</span> _.reduce(info.type, <span class="function"><span class="keyword">function</span><span class="params">(sum, t)</span> {</span>
          <span class="keyword">return</span> sum + t.length;
       }, <span class="number">0</span>);
    };
 
-   <span class="keyword">var</span> isSUType = <span class="keyword">function</span>(type) {
+   <span class="keyword">var</span> isSUType = <span class="function"><span class="keyword">function</span><span class="params">(type)</span> {</span>
       <span class="keyword">return</span> !(_.isUndefined(type)) &amp;&amp; (type === <span class="string">"CSUType"</span>);
    };
 
-   <span class="keyword">var</span> isStruct = <span class="keyword">function</span>(info) {
+   <span class="keyword">var</span> isStruct = <span class="function"><span class="keyword">function</span><span class="params">(info)</span> {</span>
       <span class="keyword">return</span> !(_.isUndefined(info)) &amp;&amp; !(_.isUndefined(info[<span class="string">"node"</span>])) &amp;&amp; info[<span class="string">"node"</span>] === <span class="string">"CCompoundType"</span>
          &amp;&amp; info.type.type === <span class="string">"CStruct"</span>;
    };
 
-   <span class="keyword">var</span> getStructSize = <span class="keyword">function</span>(info) {
+   <span class="keyword">var</span> getStructSize = <span class="function"><span class="keyword">function</span><span class="params">(info)</span> {</span>
       <span class="keyword">return</span> _(info.type.fields).size();
    };
 
-   <span class="keyword">var</span> getSMemberOffset = <span class="keyword">function</span>(member, info) {
+   <span class="keyword">var</span> getSMemberOffset = <span class="function"><span class="keyword">function</span><span class="params">(member, info)</span> {</span>
       <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; _(info.type.fields).size(); i++) {
          <span class="keyword">if</span> (member === info.type.fields[i][<span class="string">'name'</span>])
             <span class="keyword">return</span> i;
@@ -114,7 +114,7 @@
       <span class="keyword">return</span> -<span class="number">1</span>;
    };
 
-   <span class="keyword">var</span> unquotify = <span class="keyword">function</span>(str) {
+   <span class="keyword">var</span> unquotify = <span class="function"><span class="keyword">function</span><span class="params">(str)</span> {</span>
       <span class="keyword">if</span> (str.slice(<span class="number">0</span>, <span class="number">1</span>) !== <span class="string">'"'</span>)
          <span class="keyword">return</span> str;
       str = str.slice(<span class="number">1</span>);

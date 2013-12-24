@@ -5,3 +5,4 @@ Server
 *.swp
 tests/
 clojure-interp/
+node_modules/

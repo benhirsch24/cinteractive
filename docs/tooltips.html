@@ -81,7 +81,7 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>define(<span class="keyword">function</span>() {
+            <div class="content"><div class='highlight'><pre>define(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
    <span class="keyword">var</span> tooltipsOn = <span class="literal">true</span>;
    <span class="keyword">var</span> tooltips = [
       { selector: <span class="string">'#frames_container h4'</span>,
@@ -95,20 +95,20 @@
       placement: <span class="string">'top'</span> }
    ];
 
-   <span class="keyword">var</span> enableTooltips = <span class="keyword">function</span>() {
-      _.map(tooltips, <span class="keyword">function</span>(t) {
+   <span class="keyword">var</span> enableTooltips = <span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
+      _.map(tooltips, <span class="function"><span class="keyword">function</span><span class="params">(t)</span> {</span>
          $(t.selector).tooltip({title: t.title, placement: t.placement});});
    };
 
-   <span class="keyword">var</span> tooltipBindings = <span class="keyword">function</span>() {
-      $(<span class="string">'.array_key'</span>).click(<span class="keyword">function</span>(e) {
+   <span class="keyword">var</span> tooltipBindings = <span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
+      $(<span class="string">'.array_key'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">(e)</span> {</span>
          <span class="keyword">var</span> aname = $(e.currentTarget).data(<span class="string">'array'</span>);
          $(<span class="string">"tr[data-var="</span>+aname+<span class="string">"][data-first!=true]"</span>).toggle();
       });
 
-      $(<span class="string">'#tooltips'</span>).click(<span class="keyword">function</span>() {
+      $(<span class="string">'#tooltips'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
          <span class="keyword">if</span> (tooltipsOn) {
-            _.map(tooltips, <span class="keyword">function</span>(t) { $(t.selector).tooltip(<span class="string">'destroy'</span>); });
+            _.map(tooltips, <span class="function"><span class="keyword">function</span><span class="params">(t)</span> {</span> $(t.selector).tooltip(<span class="string">'destroy'</span>); });
             tooltipsOn = <span class="literal">false</span>;
          } <span class="keyword">else</span> {
             enableTooltips();

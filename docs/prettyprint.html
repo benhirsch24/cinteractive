@@ -84,7 +84,7 @@ prettyprint.js mainly sets up the data for mustache to render.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>define([<span class="string">"ui/templates"</span>, <span class="string">"interp/util"</span>], <span class="keyword">function</span>(templates, util) {
+            <div class="content"><div class='highlight'><pre>define([<span class="string">"ui/templates"</span>, <span class="string">"interp/util"</span>], <span class="function"><span class="keyword">function</span><span class="params">(templates, util)</span> {</span>
    <span class="function"><span class="keyword">function</span> <span class="title">unquotify</span><span class="params">(str)</span> {</span>
       str = str.slice(<span class="number">1</span>);
       <span class="keyword">return</span> str.slice(<span class="number">0</span>, str.length - <span class="number">1</span>);
@@ -103,24 +103,35 @@ prettyprint.js mainly sets up the data for mustache to render.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> ppFrame = <span class="keyword">function</span>(state, frameIdx) {
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> ppFrame = <span class="function"><span class="keyword">function</span><span class="params">(state, frameIdx)</span> {</span>
       <span class="keyword">var</span> frame = state.frames[frameIdx];
       <span class="keyword">var</span> params = [];
 
-      _.forEach(frame.params, <span class="keyword">function</span>(param, name) {
+      _.forEach(frame.params, <span class="function"><span class="keyword">function</span><span class="params">(param, name)</span> {</span>
          _(params).push({name: name, type: param.type});
       });
 
       <span class="keyword">var</span> stack_frame = [];
-      _.forEach(state.stack[frameIdx], <span class="keyword">function</span>(addr, name) {
+      _.forEach(state.stack[frameIdx], <span class="function"><span class="keyword">function</span><span class="params">(addr, name)</span> {</span>
          <span class="keyword">if</span> (util.isArray(state.heapinfo[addr])) {
-            _(stack_frame).push({name: name, addr: addr, value: <span class="literal">undefined</span>, info: state.heapinfo[addr], isCpound: <span class="literal">true</span>, isKey: <span class="literal">true</span>});
-            _.range(<span class="number">0</span>, util.getArrayLen(state.heapinfo[addr])).map(<span class="keyword">function</span>(i) {
-               _(stack_frame).push({name: name, addr: addr + i, value: state.heap[addr + i], info: state.heapinfo[addr], offset: i, isKey: <span class="literal">false</span>, isCpound: <span class="literal">true</span>});
+            <span class="keyword">var</span> visible = <span class="literal">false</span>;
+            <span class="keyword">if</span> ($(<span class="string">'[data-compound='</span> + name + <span class="string">']'</span>).data(<span class="string">'visible'</span>) === <span class="string">'true'</span> ||
+                $(<span class="string">'[data-compound='</span> + name + <span class="string">']'</span>).data(<span class="string">'visible'</span>) === <span class="literal">true</span>)
+                visible = <span class="literal">true</span>;
+
+            _(stack_frame).push({name: name, addr: addr, value: <span class="literal">undefined</span>, info: state.heapinfo[addr], isCpound: <span class="literal">true</span>, isKey: <span class="literal">true</span>, isVisible: visible});
+
+            _.range(<span class="number">0</span>, util.getArrayLen(state.heapinfo[addr])).map(<span class="function"><span class="keyword">function</span><span class="params">(i)</span> {</span>
+               _(stack_frame).push({name: name, addr: addr + i, value: state.heap[addr + i], info: state.heapinfo[addr], offset: i, isKey: <span class="literal">false</span>, isCpound: <span class="literal">true</span>, isVisible: visible});
             });
          } <span class="keyword">else</span> <span class="keyword">if</span> (util.isStruct(state.heapinfo[addr])) {
-            _(stack_frame).push({name: name, addr: addr, value: <span class="literal">undefined</span>, info: state.heapinfo[addr], isCpound: <span class="literal">true</span>, isKey: <span class="literal">true</span>});
-            _.range(<span class="number">0</span>, util.getStructSize(state.heapinfo[addr])).map(<span class="keyword">function</span>(i) {
+            <span class="keyword">var</span> visible = <span class="literal">false</span>;
+            <span class="keyword">if</span> ($(<span class="string">'[data-compound='</span> + name + <span class="string">']'</span>).data(<span class="string">'visible'</span>) === <span class="string">'true'</span> ||
+                $(<span class="string">'[data-compound='</span> + name + <span class="string">']'</span>).data(<span class="string">'visible'</span>) === <span class="literal">true</span>)
+                visible = <span class="literal">true</span>;
+
+            _(stack_frame).push({name: name, addr: addr, value: <span class="literal">undefined</span>, info: state.heapinfo[addr], isCpound: <span class="literal">true</span>, isKey: <span class="literal">true</span>, isVisible: visible});
+            _.range(<span class="number">0</span>, util.getStructSize(state.heapinfo[addr])).map(<span class="function"><span class="keyword">function</span><span class="params">(i)</span> {</span>
                _(stack_frame).push({name: name, addr: addr + i, value: state.heap[addr + i], info: state.heapinfo[addr], offset: i, isKey: <span class="literal">false</span>, isCpound: <span class="literal">true</span>});
             });
          } <span class="keyword">else</span> {
@@ -145,15 +156,15 @@ prettyprint.js mainly sets up the data for mustache to render.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> ppHeap = <span class="keyword">function</span>(state) {
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> ppHeap = <span class="function"><span class="keyword">function</span><span class="params">(state)</span> {</span>
       <span class="keyword">var</span> heap = <span class="string">''</span>;
       <span class="keyword">var</span> cp_ty, cp_len = <span class="number">0</span>;
 
-      _(state.heap).map(<span class="keyword">function</span>(value, addr) {
+      _(state.heap).map(<span class="function"><span class="keyword">function</span><span class="params">(value, addr)</span> {</span>
          <span class="keyword">if</span> (cp_len === <span class="number">0</span> &amp;&amp; !_.isUndefined(state.heapinfo[addr]) &amp;&amp; 
                (state.heapinfo[addr].node === <span class="string">'CArrDeclr'</span> || state.heapinfo[addr].node === <span class="string">"CCompoundType"</span>)) {
             <span class="keyword">if</span> (state.heapinfo[addr].node === <span class="string">'CArrDeclr'</span>) {
-               cp_len = _.reduce(state.heapinfo[addr].type, <span class="keyword">function</span>(sum, t) {
+               cp_len = _.reduce(state.heapinfo[addr].type, <span class="function"><span class="keyword">function</span><span class="params">(sum, t)</span> {</span>
                   <span class="keyword">return</span> sum + t.length;
                }, <span class="number">0</span>);
             } <span class="keyword">else</span> <span class="keyword">if</span> (state.heapinfo[addr].node === <span class="string">'CCompoundType'</span>) {
@@ -175,7 +186,7 @@ prettyprint.js mainly sets up the data for mustache to render.</p>
       <span class="keyword">return</span> heap;
    };
 
-   <span class="keyword">var</span> update = <span class="keyword">function</span>(e, state, frameIdx) {
+   <span class="keyword">var</span> update = <span class="function"><span class="keyword">function</span><span class="params">(e, state, frameIdx)</span> {</span>
       <span class="keyword">var</span> frame = ppFrame(state, frameIdx);
       $(e.currentTarget).empty();
 
@@ -220,22 +231,22 @@ prettyprint.js mainly sets up the data for mustache to render.</p>
    }
 
    <span class="function"><span class="keyword">function</span> <span class="title">pprint</span><span class="params">(ast, level)</span> {</span>
-      <span class="keyword">var</span> ccat = <span class="keyword">function</span>(w, s) { <span class="keyword">return</span> w + s; }
-      <span class="keyword">var</span> ident = _.range(level).map(<span class="keyword">function</span>(){<span class="keyword">return</span> <span class="string">"..."</span>}).reduce(ccat, <span class="string">''</span>);
+      <span class="keyword">var</span> ccat = <span class="function"><span class="keyword">function</span><span class="params">(w, s)</span> {</span> <span class="keyword">return</span> w + s; }
+      <span class="keyword">var</span> ident = _.range(level).map(<span class="function"><span class="keyword">function</span><span class="params">()</span>{</span><span class="keyword">return</span> <span class="string">"..."</span>}).reduce(ccat, <span class="string">''</span>);
       <span class="keyword">var</span> br = <span class="string">"&lt;br&gt;"</span>,
           si = <span class="string">"&lt;strong&gt;"</span>,
           sc = <span class="string">"&lt;/strong&gt;"</span>;
 
 
       <span class="keyword">var</span> writer = ident + si + ast[<span class="string">"node"</span>] + sc + br;
-      _(ast).forIn(<span class="keyword">function</span>(value, key) {
+      _(ast).forIn(<span class="function"><span class="keyword">function</span><span class="params">(value, key)</span> {</span>
          <span class="keyword">if</span> (key === <span class="string">"node"</span>)
             <span class="keyword">return</span> <span class="string">""</span>;
 
          <span class="keyword">if</span> (_(value).isString())
             writer += ident + key + <span class="string">": "</span> + value + br;
          <span class="keyword">else</span> <span class="keyword">if</span> (_(value).isArray()) {
-            <span class="keyword">var</span> values = _(value).map(<span class="keyword">function</span>(o){ <span class="keyword">return</span> <span class="string">"# "</span> + pprint(o, level + <span class="number">1</span>); }).reduce(ccat, <span class="string">''</span>);
+            <span class="keyword">var</span> values = _(value).map(<span class="function"><span class="keyword">function</span><span class="params">(o)</span>{</span> <span class="keyword">return</span> <span class="string">"# "</span> + pprint(o, level + <span class="number">1</span>); }).reduce(ccat, <span class="string">''</span>);
             writer += ident + key + <span class="string">":[ "</span> + br;
             writer += values;
             writer += ident + <span class="string">"]"</span> + br;
@@ -267,7 +278,7 @@ prettyprint.js mainly sets up the data for mustache to render.</p>
       show_type[<span class="string">"CUnsigType"</span>] = <span class="string">"unsigned"</span>;
       show_type[<span class="string">"CBoolType"</span>] = <span class="string">"bool"</span>;
 
-      _.map(ts, <span class="keyword">function</span>(t) {
+      _.map(ts, <span class="function"><span class="keyword">function</span><span class="params">(t)</span> {</span>
             type += show_type[t] + <span class="string">' '</span>;
       });
       <span class="keyword">return</span> type;
@@ -276,7 +287,7 @@ prettyprint.js mainly sets up the data for mustache to render.</p>
    <span class="function"><span class="keyword">function</span> <span class="title">ppParams</span><span class="params">(params)</span> {</span>
       <span class="keyword">var</span> ret = <span class="string">''</span>;
 
-      _.forIn(params, <span class="keyword">function</span>(info, name) {
+      _.forIn(params, <span class="function"><span class="keyword">function</span><span class="params">(info, name)</span> {</span>
          ret += ppType(info[<span class="string">'type'</span>]) + <span class="string">' '</span> + name + <span class="string">', '</span>;
       });
 
@@ -298,7 +309,7 @@ prettyprint.js mainly sets up the data for mustache to render.</p>
                <span class="keyword">return</span> info[<span class="string">"name"</span>] + <span class="string">" :: "</span> + type;
          }
       } <span class="keyword">else</span> <span class="keyword">if</span> (_.isArray(info)) {
-         _.map(info, <span class="keyword">function</span>(i) {
+         _.map(info, <span class="function"><span class="keyword">function</span><span class="params">(i)</span> {</span>
             <span class="keyword">var</span> t = ppType(i[<span class="string">'type'</span>]);
             <span class="keyword">switch</span>(i[<span class="string">"node"</span>]) {
                <span class="keyword">case</span> <span class="string">"CArrDeclr"</span>:</pre></div></div>

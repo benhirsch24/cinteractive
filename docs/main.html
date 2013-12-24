@@ -84,7 +84,7 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>requirejs([<span class="string">"ui/ui"</span>, <span class="string">"ui/prettyprint"</span>, <span class="string">"interp/stepper"</span>, <span class="string">"ui/tooltips"</span>], <span class="keyword">function</span>(ui, prettyprint, stepper, tooltips) {
+            <div class="content"><div class='highlight'><pre>requirejs([<span class="string">"ui/ui"</span>, <span class="string">"ui/prettyprint"</span>, <span class="string">"interp/stepper"</span>, <span class="string">"ui/tooltips"</span>], <span class="function"><span class="keyword">function</span><span class="params">(ui, prettyprint, stepper, tooltips)</span> {</span>
    <span class="keyword">var</span> currLine = <span class="number">0</span>;
    <span class="keyword">var</span> glState = {},
        glStepColl = [],
@@ -116,7 +116,7 @@
       autoCloseBrackets: <span class="literal">true</span>
    });
    CM.addKeyMap({
-      <span class="string">'Shift-Ctrl-f'</span>: <span class="keyword">function</span>(cm) {
+      <span class="string">'Shift-Ctrl-f'</span>: <span class="function"><span class="keyword">function</span><span class="params">(cm)</span> {</span>
          nextStep();
       }
    });</pre></div></div>
@@ -134,7 +134,7 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> receiveAST = <span class="keyword">function</span>(data) {
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> receiveAST = <span class="function"><span class="keyword">function</span><span class="params">(data)</span> {</span>
       glStepColl = [];
       <span class="keyword">var</span> initial_state = {};
 
@@ -183,7 +183,7 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> doStep = <span class="keyword">function</span>(state) {
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> doStep = <span class="function"><span class="keyword">function</span><span class="params">(state)</span> {</span>
       <span class="keyword">if</span> (glDone) { <span class="keyword">return</span> state; }
 
       console.log(<span class="string">"Stepping "</span> + curStep);
@@ -341,7 +341,7 @@ then set up the slider and some event bindings.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> collectSteps = <span class="keyword">function</span>(state) {
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> collectSteps = <span class="function"><span class="keyword">function</span><span class="params">(state)</span> {</span>
       glDone = <span class="literal">false</span>;
 
       <span class="keyword">while</span> (!glDone) {
@@ -351,7 +351,7 @@ then set up the slider and some event bindings.</p>
       $(<span class="string">'#stepper'</span>).prop(<span class="string">'min'</span>, <span class="number">0</span>);
       $(<span class="string">'#stepper'</span>).prop(<span class="string">'max'</span>, glStepColl.length - <span class="number">1</span>);
       $(<span class="string">'#stepper'</span>).val(<span class="number">0</span>);
-      $(<span class="string">'#stepper'</span>).change(<span class="keyword">function</span>(e) {
+      $(<span class="string">'#stepper'</span>).change(<span class="function"><span class="keyword">function</span><span class="params">(e)</span> {</span>
          curStep = $(e.currentTarget).val();
          ui.uiStep(glStepColl[$(e.currentTarget).val()]);
       });
@@ -372,7 +372,7 @@ then set up the slider and some event bindings.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> autoPlay = <span class="keyword">function</span>() {</pre></div></div>
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> autoPlay = <span class="function"><span class="keyword">function</span><span class="params">()</span> {</span></pre></div></div>
             
         </li>
         
@@ -432,7 +432,7 @@ then set up the slider and some event bindings.</p>
    };
 
 
-   <span class="keyword">var</span> uiBindings = <span class="keyword">function</span>() {</pre></div></div>
+   <span class="keyword">var</span> uiBindings = <span class="function"><span class="keyword">function</span><span class="params">()</span> {</span></pre></div></div>
             
         </li>
         
@@ -447,58 +447,58 @@ then set up the slider and some event bindings.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>      $(<span class="string">'#autoclose'</span>).change(<span class="keyword">function</span>(e){ CM.setOption(<span class="string">'autoCloseBrackets'</span>, $(e.currentTarget).prop(<span class="string">'checked'</span>)) });
+            <div class="content"><div class='highlight'><pre>      $(<span class="string">'#autoclose'</span>).change(<span class="function"><span class="keyword">function</span><span class="params">(e)</span>{</span> CM.setOption(<span class="string">'autoCloseBrackets'</span>, $(e.currentTarget).prop(<span class="string">'checked'</span>)) });
       $(<span class="string">'.opts_menu'</span>).toggle();
-      $(<span class="string">'#options'</span>).click(<span class="keyword">function</span>() {$(<span class="string">'.opts_menu'</span>).animate({height: <span class="string">'toggle'</span>});});
+      $(<span class="string">'#options'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>$(<span class="string">'.opts_menu'</span>).animate({height: <span class="string">'toggle'</span>});});
       $(<span class="string">'#code'</span>).focus();
 
-      $(<span class="string">'#state'</span>).click(<span class="keyword">function</span>() {
+      $(<span class="string">'#state'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
          console.log(glState);
       });
-      $(<span class="string">'#give'</span>).click(<span class="keyword">function</span>(){ a = glState; });
-      $(<span class="string">'#scoll'</span>).click(<span class="keyword">function</span>(){ console.log(glStepColl); });
-      $(<span class="string">'#step'</span>).click(<span class="keyword">function</span>(){ 
+      $(<span class="string">'#give'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span>{</span> a = glState; });
+      $(<span class="string">'#scoll'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span>{</span> console.log(glStepColl); });
+      $(<span class="string">'#step'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span>{</span> 
          glState = doStep(glState); 
          ui.uiStep(glState);
       });
 
-      $(<span class="string">'.autoplay'</span>).click(<span class="keyword">function</span>() { pause = <span class="literal">false</span>; autoPlay(); });
-      $(<span class="string">'.undo-a-step'</span>).click(<span class="keyword">function</span>() { <span class="keyword">if</span> (play_i &lt; _(glStepColl).size()) { play_i -= <span class="number">1</span>; ui.uiStep(glStepColl[play_i]); } });
-      $(<span class="string">'.do-a-step'</span>).click(<span class="keyword">function</span>() { <span class="keyword">if</span> (play_i &lt; _(glStepColl).size()) { ui.uiStep(glStepColl[play_i]); play_i += <span class="number">1</span>; } });
-      $(<span class="string">'.stop'</span>).click(<span class="keyword">function</span>() { play_i = _(glStepColl).size(); });
-      $(<span class="string">'.pause'</span>).click(<span class="keyword">function</span>() { pause = <span class="literal">true</span>; });
-
-      $(<span class="string">"#compile"</span>).click(<span class="keyword">function</span>() {
+      $(<span class="string">'.autoplay'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span> pause = <span class="literal">false</span>; autoPlay(); });
+      $(<span class="string">'.undo-a-step'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span> <span class="keyword">if</span> (play_i &lt; _(glStepColl).size()) { ui.uiStep(glStepColl[play_i]); play_i -= <span class="number">1</span>; } });
+      $(<span class="string">'.do-a-step'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span> <span class="keyword">if</span> (play_i &lt; _(glStepColl).size()) { ui.uiStep(glStepColl[play_i]); play_i += <span class="number">1</span>; } });
+      $(<span class="string">'.stop'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span> play_i = _(glStepColl).size(); });
+      $(<span class="string">'.pause'</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span> pause = <span class="literal">true</span>; });
+      $(<span class="string">"#compile"</span>).click(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
          $(<span class="string">'#functions'</span>).empty();
-         $(<span class="string">'.alert'</span>).hide();
-         $(<span class="string">'.collected a'</span>).text(<span class="string">'Data Received, Click to Collect Steps'</span>);
-         $(<span class="string">'.collected a'</span>).one(<span class="string">'click'</span>, <span class="keyword">function</span>() {
-            glStepColl = collectSteps(glState, glStepColl);
-            glState = glStepColl[<span class="number">0</span>];
-
-            $(<span class="string">'.collected a'</span>).html(<span class="string">'Steps compiled'</span>);
-         });
-
          $(<span class="string">'#source'</span>).empty();
+         $(<span class="string">'.alert'</span>).hide();
 
-         $.post(<span class="string">'http://localhost:3000/parse'</span>, CM.getValue())
-         .success(<span class="keyword">function</span>(data) {
-            <span class="keyword">var</span> rstate = receiveAST(data);
-            <span class="keyword">var</span> state    = rstate;
+         $.post(<span class="string">'/parse'</span>, CM.getValue())
+            .success(<span class="function"><span class="keyword">function</span><span class="params">(data)</span> {</span>
+               <span class="keyword">var</span> rstate = receiveAST(data);
+               <span class="keyword">var</span> state    = rstate;
 
-            glState = state;
-            ui.uiStep(state);
+               glState = state;
+               ui.uiStep(state);
 
-            curStep = <span class="number">0</span>;
+               curStep = <span class="number">0</span>;
 
-            <span class="keyword">var</span> newstack = [{}];
-            glState.stack = newstack.concat(glState.stack);
-            glState.frames.unshift({name: <span class="string">'main'</span>, params: state.heapinfo[_(state.stack).last()[<span class="string">"main"</span>]].params});
-         })
-         .error(<span class="keyword">function</span>(err) {
-            $(<span class="string">'.alert'</span>).html(err);
-            $(<span class="string">'.alert'</span>).toggle();
-         });
+               <span class="keyword">var</span> newstack = [{}];
+               glState.stack = newstack.concat(glState.stack);
+               glState.frames.unshift({name: <span class="string">'main'</span>, params: state.heapinfo[_(state.stack).last()[<span class="string">"main"</span>]].params});
+
+               glStepColl = collectSteps(glState, glStepColl);
+               glState = glStepColl[<span class="number">0</span>];
+
+               $(<span class="string">'#player'</span>).slideDown();
+               $(<span class="string">'#run_info'</span>).slideDown();
+               $(<span class="string">'#whatsgoingon'</span>).empty();
+            })
+            .error(<span class="function"><span class="keyword">function</span><span class="params">(err)</span> {</span>
+               $(<span class="string">'#player'</span>).fadeOut();
+               $(<span class="string">'#run_info'</span>).fadeOut();
+               $(<span class="string">'.alert'</span>).html(err);
+               $(<span class="string">'.alert'</span>).hide();
+            });
          <span class="keyword">return</span> <span class="literal">false</span>;
       });
 
@@ -537,11 +537,19 @@ then set up the slider and some event bindings.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>   $(document).on(<span class="string">'state_update'</span>, <span class="string">'#frames li'</span>, prettyprint.update);
-   $(document).on(<span class="string">'click'</span>, <span class="string">'.compound_key'</span>, <span class="keyword">function</span>(e) {
+   $(document).on(<span class="string">'click'</span>, <span class="string">'.compound_key'</span>, <span class="function"><span class="keyword">function</span><span class="params">(e)</span> {</span>
       <span class="keyword">var</span> key = $(e.currentTarget);
       <span class="keyword">var</span> name = key.data(<span class="string">'compound'</span>);
-      $(<span class="string">'[data-var="'</span> + name + <span class="string">'"]'</span>).toggle();
+      <span class="keyword">var</span> el = $(<span class="string">'[data-var="'</span> + name + <span class="string">'"]'</span>);
+      el.toggle();
+
+      <span class="keyword">if</span> ($(el[<span class="number">0</span>]).css(<span class="string">'display'</span>) === <span class="string">'none'</span>)
+         key.data(<span class="string">'visible'</span>, <span class="string">'false'</span>);
+      <span class="keyword">else</span>
+         key.data(<span class="string">'visible'</span>, <span class="string">'true'</span>);
    });
+
+   $(document).scrollTop($(<span class="string">'#code'</span>).offset().top);
 });</pre></div></div>
             
         </li>

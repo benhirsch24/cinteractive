@@ -81,7 +81,8 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>define([<span class="string">"interp/stepper"</span>, <span class="string">"ui/prettyprint"</span>], <span class="keyword">function</span>(stepper, prettyprint) { <span class="keyword">return</span> <span class="keyword">function</span>(CM) {
+            <div class="content"><div class='highlight'><pre>define([<span class="string">"interp/stepper"</span>, <span class="string">"ui/prettyprint"</span>], <span class="function"><span class="keyword">function</span><span class="params">(stepper, prettyprint)</span> {</span> <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(CM)</span> {</span>
+   <span class="keyword">var</span> isHintOn = <span class="literal">false</span>;
    <span class="keyword">var</span> numFrames = <span class="number">0</span>;
    <span class="keyword">var</span> curLine = <span class="number">0</span>;</pre></div></div>
             
@@ -98,7 +99,7 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> updateMemory = <span class="keyword">function</span>(state) {
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> updateMemory = <span class="function"><span class="keyword">function</span><span class="params">(state)</span> {</span>
       <span class="keyword">var</span> curFrames = state.stack.length;</pre></div></div>
             
         </li>
@@ -141,7 +142,7 @@
       }
 
       <span class="keyword">var</span> frames = $(<span class="string">'#frames &gt; li'</span>);
-      _(state.stack).map(<span class="keyword">function</span>(frame, frameIdx) {
+      _(state.stack).map(<span class="function"><span class="keyword">function</span><span class="params">(frame, frameIdx)</span> {</span>
          $(frames[frameIdx]).trigger(<span class="string">'state_update'</span>, [state, frameIdx]);
       });
 
@@ -149,27 +150,41 @@
       $(<span class="string">'#heap tbody'</span>).html(prettyprint.ppHeap(state));
    }
 
-   <span class="keyword">var</span> uiStep = <span class="keyword">function</span>(state) {
+   <span class="keyword">var</span> uiStep = <span class="function"><span class="keyword">function</span><span class="params">(state)</span> {</span>
       updateMemory(state);
-      state.kont(kont);
+      state.kont(kontFun);
 
       numFrames = _(state.stack).size();
    };
+   
 
-   <span class="keyword">var</span> kont = {
-      tell: <span class="keyword">function</span>(msg) {
-         $(<span class="string">'#whatsgoingon'</span>).html(msg + <span class="string">'&lt;br&gt;'</span>);
+   <span class="keyword">var</span> kontFun = {
+      tell: <span class="function"><span class="keyword">function</span><span class="params">(msg, line)</span> {</span>
+         $(<span class="string">'#whatsgoingon'</span>).html(msg + <span class="string">'&lt;br&gt;&lt;br&gt;'</span>);
+         <span class="keyword">if</span> (line) {
+             $(<span class="string">'#whatsgoingon'</span>).append(<span class="string">'&lt;div class="code_style"&gt;'</span> + line + <span class="string">": "</span> + CM.getLine(line - <span class="number">1</span>) + <span class="string">'&lt;/div&gt;'</span>);
+             $(<span class="string">'#whatsgoingon'</span>).append(<span class="string">'&lt;br&gt;&lt;a href="#thecode"&gt;Jump to code&lt;/a&gt;'</span>);
+         }
       },
-      hilite_line: <span class="keyword">function</span>(line) {
+      hilite_line: <span class="function"><span class="keyword">function</span><span class="params">(line)</span> {</span>
          CM.removeLineClass(curLine, <span class="string">'wrap'</span>, <span class="string">'active_line'</span>);
          CM.addLineClass(line - <span class="number">1</span>, <span class="string">'wrap'</span>, <span class="string">'active_line'</span>);
          curLine = line - <span class="number">1</span>;
+
+         <span class="keyword">var</span> hint = $(<span class="string">'#codehint'</span>);
+         hint.empty();
+         _(_.range(curLine - <span class="number">5</span>, curLine + <span class="number">5</span>)).forEach(<span class="function"><span class="keyword">function</span><span class="params">(l)</span> {</span>
+             <span class="keyword">if</span> (l &gt; <span class="number">0</span>) {
+                hint.append(l + <span class="string">': '</span> + CM.getLine(l));
+                hint.append(<span class="string">'&lt;br&gt;'</span>);
+             }
+         });
       }
    };
 
    <span class="keyword">return</span> {
       uiStep: uiStep,
-      kont: kont
+      kont: kontFun
    };
 }});</pre></div></div>
             

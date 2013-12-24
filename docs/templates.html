@@ -81,7 +81,7 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>define(<span class="keyword">function</span>() {
+            <div class="content"><div class='highlight'><pre>define(<span class="function"><span class="keyword">function</span><span class="params">()</span> {</span>
 
    <span class="function"><span class="keyword">function</span> <span class="title">ppType</span><span class="params">(types, isKey, offset)</span> {</span>
       <span class="keyword">var</span> type = <span class="string">''</span>;
@@ -117,7 +117,7 @@ each individual entry int [0], int [1], etc.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>         _.map(ts, <span class="keyword">function</span>(t) {
+            <div class="content"><div class='highlight'><pre>         _.map(ts, <span class="function"><span class="keyword">function</span><span class="params">(t)</span> {</span>
             <span class="keyword">if</span> (!_.isObject(t)) {
                type += show_type[t] + <span class="string">' '</span>;
             } <span class="keyword">else</span> 
@@ -144,7 +144,7 @@ each individual entry int [0], int [1], etc.</p>
       <span class="keyword">return</span> type;
    }
 
-   Handlebars.registerHelper(<span class="string">'params'</span>, <span class="keyword">function</span>(params) {
+   Handlebars.registerHelper(<span class="string">'params'</span>, <span class="function"><span class="keyword">function</span><span class="params">(params)</span> {</span>
       <span class="keyword">var</span> str = <span class="string">''</span>
       <span class="keyword">var</span> i = <span class="number">0</span>;
       <span class="keyword">var</span> num_params = _(params).size();
@@ -163,7 +163,7 @@ each individual entry int [0], int [1], etc.</p>
 
    Handlebars.registerPartial(<span class="string">'signature'</span>, <span class="string">'{{frame.name}}({{params frame.params}})'</span>);
 
-   Handlebars.registerHelper(<span class="string">'print_type'</span>, <span class="keyword">function</span>(type, isKey, offset) {
+   Handlebars.registerHelper(<span class="string">'print_type'</span>, <span class="function"><span class="keyword">function</span><span class="params">(type, isKey, offset)</span> {</span>
       <span class="keyword">return</span> ppType(type, isKey, offset);
    });</pre></div></div>
             
@@ -180,7 +180,7 @@ each individual entry int [0], int [1], etc.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   Handlebars.registerHelper(<span class="string">'heapval'</span>, <span class="keyword">function</span>(val, info) {
+            <div class="content"><div class='highlight'><pre>   Handlebars.registerHelper(<span class="string">'heapval'</span>, <span class="function"><span class="keyword">function</span><span class="params">(val, info, isVisible)</span> {</span>
       <span class="keyword">var</span> str_templ, templ, context = {};
 
       <span class="keyword">switch</span>(info[<span class="string">"node"</span>]) {
@@ -188,7 +188,7 @@ each individual entry int [0], int [1], etc.</p>
             str_templ = <span class="string">"Function of ({{params params}})"</span>;
 
             <span class="keyword">var</span> params = [];
-            _.forEach(info.params, <span class="keyword">function</span>(param, name) {
+            _.forEach(info.params, <span class="function"><span class="keyword">function</span><span class="params">(param, name)</span> {</span>
                _(params).push({name: name, type: param.type});
             });
             context = {params: params};
@@ -225,8 +225,8 @@ each individual entry int [0], int [1], etc.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>            str_templ = <span class="string">"&lt;a href='#' class='compound_key' data-compound='{{name}}'&gt;Expand/Collapse Array&lt;/a&gt;"</span>;
-            context = {name: info.name};
+            <div class="content"><div class='highlight'><pre>            str_templ = <span class="string">"&lt;a href='#' class='compound_key' data-compound='{{name}}' {{#if isVisible }} data-visible='true' {{/if}}&gt;Expand/Collapse Array&lt;/a&gt;"</span>;
+            context = {name: info.name, isVisible: isVisible};
             <span class="keyword">break</span>;
          <span class="keyword">case</span> <span class="string">"CDecl"</span>:
             <span class="keyword">return</span> val;
@@ -236,8 +236,8 @@ each individual entry int [0], int [1], etc.</p>
             <span class="keyword">if</span> (!(_.isUndefined(val)))
                <span class="keyword">return</span> val;
 
-            str_templ = <span class="string">"&lt;a href='#' class='compound_key' data-compound='{{name}}'&gt;Expand/Collapse Struct&lt;/a&gt;"</span>;
-            context = {name: info.name};
+            str_templ = <span class="string">"&lt;a href='#' class='compound_key' data-compound='{{name}}' {{#if isVisible }} data-visible='true' {{/if}}&gt;Expand/Collapse Struct&lt;/a&gt;"</span>;
+            context = {name: info.name, isVisible: isVisible};
             <span class="keyword">break</span>;
       };
       templ = Handlebars.compile(str_templ);
@@ -245,7 +245,7 @@ each individual entry int [0], int [1], etc.</p>
       <span class="keyword">return</span> templ(context);
    });
 
-   Handlebars.registerHelper(<span class="string">'stackvars'</span>, <span class="keyword">function</span>(vars, options) {
+   Handlebars.registerHelper(<span class="string">'stackvars'</span>, <span class="function"><span class="keyword">function</span><span class="params">(vars, options)</span> {</span>
       <span class="keyword">var</span> ret = <span class="string">''</span>;
       <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; vars.length; i++) {
          ret += options.fn(vars[i]);
@@ -253,14 +253,16 @@ each individual entry int [0], int [1], etc.</p>
       <span class="keyword">return</span> ret;
    });
 
-   <span class="keyword">var</span> frame = <span class="keyword">function</span>(frame, stack_frame) {
+   <span class="keyword">var</span> frame = <span class="function"><span class="keyword">function</span><span class="params">(frame, stack_frame)</span> {</span>
       <span class="keyword">var</span> str = <span class="string">"&lt;table class='table table-bordered table-striped'&gt;&lt;caption&gt;{{&gt; signature}}&lt;/caption&gt;"</span>;
 
       <span class="keyword">var</span> vars = <span class="string">"{{#stackvars stack_frame}}"</span>;
-         vars += <span class="string">"&lt;tr class='frame_var' {{#if isCpound}} {{#unless isKey}}data-var='{{info.name}}'{{/unless}}{{/if}} style='{{#if isCpound}}{{#unless isKey}} display:none {{/unless}}{{/if}}'&gt;"</span>;
+         vars += <span class="string">"&lt;tr class='frame_var'"</span> +
+                 <span class="string">" {{#if isCpound}} {{#unless isKey}} data-var='{{info.name}}' {{/unless}} {{/if}}"</span> +
+                 <span class="string">" style='{{#if isCpound}}{{#unless isKey}}{{#unless isVisible}} display:none {{/unless}}{{/unless}}{{/if}}'&gt;"</span>;
          vars += <span class="string">"&lt;td class='var_addr'&gt;&lt;a href='#' data-addr='{{addr}}'&gt;{{addr}}&lt;/a&gt;&lt;/td&gt;"</span>;
          vars += <span class="string">"&lt;td class='variable'&gt;{{print_type info.type isKey offset}} {{name}}&lt;/td&gt;"</span>;
-         vars += <span class="string">"&lt;td class='value'&gt;{{{heapval value info}}}&lt;/td&gt;&lt;/tr&gt;{{/stackvars}}"</span>;
+         vars += <span class="string">"&lt;td class='value'&gt;{{{heapval value info isVisible}}}&lt;/td&gt;&lt;/tr&gt;{{/stackvars}}"</span>;
 
       <span class="keyword">var</span> end = <span class="string">"&lt;/table&gt;"</span>;
       <span class="keyword">var</span> templ = str + vars + end;
@@ -285,7 +287,7 @@ filled in until the actual CFunDef node is evaluated. Just print it then.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> heap_entry = <span class="keyword">function</span>(entry) {
+            <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> heap_entry = <span class="function"><span class="keyword">function</span><span class="params">(entry)</span> {</span>
       <span class="keyword">if</span> (_.isUndefined(entry.info))
          <span class="keyword">return</span> <span class="string">''</span>;
 

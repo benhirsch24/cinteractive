@@ -87,7 +87,7 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>define([<span class="string">"interp/util"</span>], <span class="keyword">function</span>(util) {</pre></div></div>
+            <div class="content"><div class='highlight'><pre>define([<span class="string">"interp/util"</span>], <span class="function"><span class="keyword">function</span><span class="params">(util)</span> {</span></pre></div></div>
             
         </li>
         
@@ -103,17 +103,17 @@
             </div>
             
             <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> assops = {};
-   assops[<span class="string">"CAssignOp"</span>] = <span class="keyword">function</span>(l, r) { <span class="keyword">return</span> r; };
-   assops[<span class="string">"CMulAssOp"</span>] = <span class="keyword">function</span>(l, r) { <span class="keyword">return</span> l * r; }
-   assops[<span class="string">"CDivAssOp"</span>] = <span class="keyword">function</span>(l, r) { <span class="keyword">return</span> l / r; }
-   assops[<span class="string">"CRemAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l % r; };
-   assops[<span class="string">"CAddAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l + r; };
-   assops[<span class="string">"CSubAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l - r; };
-   assops[<span class="string">"CShlAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l * <span class="number">2</span> * r; };
-   assops[<span class="string">"CShrAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l / <span class="number">2</span> * r; };
-   assops[<span class="string">"CAndAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &amp; r; };
-   assops[<span class="string">"COrAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l | r; };
-   assops[<span class="string">"CXorAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l ^ r; };</pre></div></div>
+   assops[<span class="string">"CAssignOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l, r)</span> {</span> <span class="keyword">return</span> r; };
+   assops[<span class="string">"CMulAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l, r)</span> {</span> <span class="keyword">return</span> l * r; }
+   assops[<span class="string">"CDivAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l, r)</span> {</span> <span class="keyword">return</span> l / r; }
+   assops[<span class="string">"CRemAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l % r; };
+   assops[<span class="string">"CAddAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l + r; };
+   assops[<span class="string">"CSubAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l - r; };
+   assops[<span class="string">"CShlAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l * <span class="number">2</span> * r; };
+   assops[<span class="string">"CShrAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l / <span class="number">2</span> * r; };
+   assops[<span class="string">"CAndAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l &amp; r; };
+   assops[<span class="string">"COrAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l | r; };
+   assops[<span class="string">"CXorAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l ^ r; };</pre></div></div>
             
         </li>
         
@@ -129,24 +129,24 @@
             </div>
             
             <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> binops = {};
-   binops[<span class="string">"CMulOp"</span>] = <span class="keyword">function</span>(l, r) { <span class="keyword">return</span> l * r; }
-   binops[<span class="string">"CDivOp"</span>] = <span class="keyword">function</span>(l, r) { <span class="keyword">return</span> l / r; }
-   binops[<span class="string">"CRmdOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l % r; };
-   binops[<span class="string">"CAddOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l + r; };
-   binops[<span class="string">"CSubOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l - r; };
-   binops[<span class="string">"CShlOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l * <span class="number">2</span> * r; };
-   binops[<span class="string">"CShrOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l / <span class="number">2</span> * r; };
-   binops[<span class="string">"CAndOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &amp; r; };
-   binops[<span class="string">"COrAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l | r; };
-   binops[<span class="string">"CXorAssOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l ^ r; };
-   binops[<span class="string">"CLndOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &amp;&amp; r; };
-   binops[<span class="string">"CLorOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l || r; };
-   binops[<span class="string">"CLeOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &lt; r; };
-   binops[<span class="string">"CGrOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &gt; r; };
-   binops[<span class="string">"CLeqOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &lt;= r; };
-   binops[<span class="string">"CGeqOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l &gt;= r; };
-   binops[<span class="string">"CEqOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l === r; };
-   binops[<span class="string">"CNeqOp"</span>] = <span class="keyword">function</span>(l,r) { <span class="keyword">return</span> l !== r; };</pre></div></div>
+   binops[<span class="string">"CMulOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l, r)</span> {</span> <span class="keyword">return</span> l * r; }
+   binops[<span class="string">"CDivOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l, r)</span> {</span> <span class="keyword">return</span> l / r; }
+   binops[<span class="string">"CRmdOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l % r; };
+   binops[<span class="string">"CAddOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l + r; };
+   binops[<span class="string">"CSubOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l - r; };
+   binops[<span class="string">"CShlOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l * <span class="number">2</span> * r; };
+   binops[<span class="string">"CShrOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l / <span class="number">2</span> * r; };
+   binops[<span class="string">"CAndOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l &amp; r; };
+   binops[<span class="string">"COrAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l | r; };
+   binops[<span class="string">"CXorAssOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l ^ r; };
+   binops[<span class="string">"CLndOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l &amp;&amp; r; };
+   binops[<span class="string">"CLorOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l || r; };
+   binops[<span class="string">"CLeOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l &lt; r; };
+   binops[<span class="string">"CGrOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l &gt; r; };
+   binops[<span class="string">"CLeqOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l &lt;= r; };
+   binops[<span class="string">"CGeqOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l &gt;= r; };
+   binops[<span class="string">"CEqOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l === r; };
+   binops[<span class="string">"CNeqOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(l,r)</span> {</span> <span class="keyword">return</span> l !== r; };</pre></div></div>
             
         </li>
         
@@ -162,12 +162,12 @@
             </div>
             
             <div class="content"><div class='highlight'><pre>   <span class="keyword">var</span> unops = {};
-   unops[<span class="string">"CPreIncOp"</span>] = <span class="keyword">function</span>(addr, heap) { heap[addr] = heap[addr] + <span class="number">1</span>; <span class="keyword">return</span> {val: heap[addr] + <span class="number">1</span>, heap: heap}; }
-   unops[<span class="string">"CPreDecOp"</span>] = <span class="keyword">function</span>(addr, heap) { heap[addr] = heap[addr] - <span class="number">1</span>; <span class="keyword">return</span> {val: heap[addr] - <span class="number">1</span>, heap: heap}; }
-   unops[<span class="string">"CPostIncOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">var</span> u = heap[addr]; heap[addr] = u + <span class="number">1</span>; console.log(heap); <span class="keyword">return</span> {val: u, heap: heap}; }
-   unops[<span class="string">"CPostDecOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">var</span> u = heap[addr]; heap[addr] = u - <span class="number">1</span>; <span class="keyword">return</span> {val: u, heap: heap}; }
-   unops[<span class="string">"CAdrOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: addr, heap: heap}; }
-   unops[<span class="string">"CIndOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: heap[addr], heap: heap}; }</pre></div></div>
+   unops[<span class="string">"CPreIncOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(addr, heap)</span> {</span> heap[addr] = heap[addr] + <span class="number">1</span>; <span class="keyword">return</span> {val: heap[addr] + <span class="number">1</span>, heap: heap}; }
+   unops[<span class="string">"CPreDecOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(addr, heap)</span> {</span> heap[addr] = heap[addr] - <span class="number">1</span>; <span class="keyword">return</span> {val: heap[addr] - <span class="number">1</span>, heap: heap}; }
+   unops[<span class="string">"CPostIncOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(addr, heap)</span> {</span> <span class="keyword">var</span> u = heap[addr]; heap[addr] = u + <span class="number">1</span>; console.log(heap); <span class="keyword">return</span> {val: u, heap: heap}; }
+   unops[<span class="string">"CPostDecOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(addr, heap)</span> {</span> <span class="keyword">var</span> u = heap[addr]; heap[addr] = u - <span class="number">1</span>; <span class="keyword">return</span> {val: u, heap: heap}; }
+   unops[<span class="string">"CAdrOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(addr, heap)</span> {</span> <span class="keyword">return</span> {val: addr, heap: heap}; }
+   unops[<span class="string">"CIndOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(addr, heap)</span> {</span> <span class="keyword">return</span> {val: heap[addr], heap: heap}; }</pre></div></div>
             
         </li>
         
@@ -182,10 +182,10 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   unops[<span class="string">"CPlusOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: heap[addr], heap: heap}; }
-   unops[<span class="string">"CMinOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: heap[addr], heap: heap}; }
-   unops[<span class="string">"CCompOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: ~heap[addr], heap: heap}; }
-   unops[<span class="string">"CNegOp"</span>] = <span class="keyword">function</span>(addr, heap) { <span class="keyword">return</span> {val: -heap[addr], heap: heap}; }</pre></div></div>
+            <div class="content"><div class='highlight'><pre>   unops[<span class="string">"CPlusOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(addr, heap)</span> {</span> <span class="keyword">return</span> {val: heap[addr], heap: heap}; }
+   unops[<span class="string">"CMinOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(addr, heap)</span> {</span> <span class="keyword">return</span> {val: heap[addr], heap: heap}; }
+   unops[<span class="string">"CCompOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(addr, heap)</span> {</span> <span class="keyword">return</span> {val: ~heap[addr], heap: heap}; }
+   unops[<span class="string">"CNegOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(addr, heap)</span> {</span> <span class="keyword">return</span> {val: -heap[addr], heap: heap}; }</pre></div></div>
             
         </li>
         
@@ -351,7 +351,7 @@
             <div class="content"><div class='highlight'><pre>   <span class="function"><span class="keyword">function</span> <span class="title">evalSpecifiers</span><span class="params">(specs, state)</span> {</span>
       <span class="keyword">var</span> type = <span class="string">''</span>;
 
-      _(specs).map(<span class="keyword">function</span>(s) {
+      _(specs).map(<span class="function"><span class="keyword">function</span><span class="params">(s)</span> {</span>
          <span class="keyword">switch</span>(s[<span class="string">'spec'</span>][<span class="string">'node'</span>]) {
             <span class="keyword">case</span> <span class="string">'CUnsigType'</span>:
                type += <span class="string">'unsigned '</span>;
@@ -382,7 +382,7 @@
             </div>
             
             <div class="content"><div class='highlight'><pre>   evalNode = {};
-   evalNode[<span class="string">"CTranslUnit"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CTranslUnit"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       
    };</pre></div></div>
             
@@ -401,7 +401,7 @@ then return the address which is the array address + offset</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CIndex"</span>] = <span class="keyword">function</span>(node, state) {
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CIndex"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">var</span> index = eval(node[<span class="string">"index"</span>], state);
       <span class="keyword">var</span> array = evalLhs(node[<span class="string">"array"</span>], index.state);
       <span class="keyword">var</span> addr = array.val + index.val;
@@ -410,77 +410,77 @@ then return the address which is the array address + offset</p>
       <span class="keyword">return</span> {val: state.heap[addr], state: state};
    }
 
-   evalNode[<span class="string">"CFunDef"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CFunDef"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> {val: node, state: state};
    };
 
-   evalNode[<span class="string">"CMulOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CMulOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a * b, state: state};
       };
    };
-   evalNode[<span class="string">"CDivOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CDivOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a / b, state: state};
       };
    };
-   evalNode[<span class="string">"CRmdOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CRmdOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a % b, state: state};
       };
    };
-   evalNode[<span class="string">"CAndOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CAndOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a &amp;&amp; b, state: state};
       };
    };
-   evalNode[<span class="string">"COrOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"COrOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a || b, state: state};
       };
    };
-   evalNode[<span class="string">"CXorOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CXorOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a ^ b, state: state};
       };
    };
-   evalNode[<span class="string">"CNeqOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CNeqOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a !== b, state: state};
       };
    };
-   evalNode[<span class="string">"CEqOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CEqOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a === b, state: state};
       };
    };
-   evalNode[<span class="string">"CGeqOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CGeqOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a &gt;= b, state: state};
       };
    };
-   evalNode[<span class="string">"CLeqOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CLeqOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a &lt;= b, state: state};
       };
    };
-   evalNode[<span class="string">"CLeOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CLeOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a &lt; b, state: state};
       };
    };
-   evalNode[<span class="string">"CGrOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CGrOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a &gt; b, state: state};
       };
    };
-   evalNode[<span class="string">"CAddOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CAddOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a + b, state: state};
       };
    };
-   evalNode[<span class="string">"CSubOp"</span>] = <span class="keyword">function</span>(node, state) {
-      <span class="keyword">return</span> <span class="keyword">function</span>(a, b, state) {
+   evalNode[<span class="string">"CSubOp"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
+      <span class="keyword">return</span> <span class="function"><span class="keyword">function</span><span class="params">(a, b, state)</span> {</span>
          <span class="keyword">return</span> {val: a -b, state: state};
       };
    };
@@ -503,16 +503,16 @@ then return the address which is the array address + offset</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CVar"</span>] = <span class="keyword">function</span>(node, state) {
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CVar"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> {val: state.heap[varLookup(util.unquotify(node[<span class="string">"name"</span>]), state.stack)], state: state};
    };
 
-   evalNode[<span class="string">"CConst"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CConst"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> eval(node[<span class="string">"const"</span>], state);
    };
 
 
-   evalNode[<span class="string">"CUnary"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CUnary"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">var</span> val = eval(node[<span class="string">"expr"</span>], state);
       <span class="keyword">var</span> v = val.val;
       <span class="keyword">var</span> ret;
@@ -561,7 +561,7 @@ then return the address which is the array address + offset</p>
       <span class="keyword">return</span> {val: ret, state: val.state};
    };
 
-   evalNode[<span class="string">"CBinary"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CBinary"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">var</span> erand1 = eval(node[<span class="string">"erand1"</span>], state),
           erand2 = eval(node[<span class="string">"erand2"</span>], erand1.state);
       state = erand2.state;
@@ -584,7 +584,7 @@ then return the address which is the array address + offset</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CCall"</span>] = <span class="keyword">function</span>(node, state) {
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CCall"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">var</span> arg, fun,
           fun_name = util.unquotify(node[<span class="string">"function"</span>][<span class="string">"name"</span>]);
       <span class="keyword">var</span> fun_addr;
@@ -607,7 +607,7 @@ then return the address which is the array address + offset</p>
             <div class="content"><div class='highlight'><pre>      fun_addr = varLookup(fun_name, state.stack);
       <span class="keyword">if</span> (_(fun_addr).isUndefined()) {
          console.log(<span class="string">"No function defined"</span>);
-         state.kont = <span class="keyword">function</span>(ui) {
+         state.kont = <span class="function"><span class="keyword">function</span><span class="params">(ui)</span> {</span>
             ui.tell(<span class="string">"Error in CCall"</span>);
          }
          <span class="keyword">return</span> {val: <span class="literal">undefined</span>, state: state};
@@ -680,14 +680,14 @@ then return the address which is the array address + offset</p>
             
             <div class="content"><div class='highlight'><pre>      _(state.frames).unshift({name: fun_name, params: state.heapinfo[fun_addr].params});
 
-      state.kont = <span class="keyword">function</span>(ui) {
+      state.kont = <span class="function"><span class="keyword">function</span><span class="params">(ui)</span> {</span>
          ui.tell(<span class="string">'About to call '</span> + fun_name);
       };
 
       <span class="keyword">return</span> { val: fun.val, state: state };
    };
 
-   evalNode[<span class="string">"CAssign"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CAssign"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">var</span> lhs = evalLhs(node[<span class="string">"lvalue"</span>], state);
       <span class="keyword">var</span> rval = eval(node[<span class="string">"rvalue"</span>], lhs.state);
       <span class="keyword">var</span> addr = lhs.val;
@@ -702,7 +702,7 @@ then return the address which is the array address + offset</p>
       <span class="keyword">return</span> {val: val, state: state};
    };
 
-   evalNode[<span class="string">"CExpr"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CExpr"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> eval(node[<span class="string">"expr"</span>], state);
    };</pre></div></div>
             
@@ -719,7 +719,7 @@ then return the address which is the array address + offset</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CWhile"</span>] = <span class="keyword">function</span>(node, state) {
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CWhile"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">var</span> guard = eval(node[<span class="string">"guard"</span>], state);
       <span class="keyword">var</span> next;
 
@@ -743,7 +743,7 @@ then return the address which is the array address + offset</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CFor"</span>] = <span class="keyword">function</span>(node, state) {
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CFor"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">var</span> init = eval(node[<span class="string">"init"</span>], state);
       <span class="keyword">var</span> guard = eval(node[<span class="string">"guard"</span>], init.state);
       <span class="keyword">var</span> stat;
@@ -755,7 +755,7 @@ then return the address which is the array address + offset</p>
       <span class="keyword">return</span> {val: {}, state: guard.state};
    };
 
-   evalNode[<span class="string">"CIf"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CIf"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">var</span> ret = eval(node[<span class="string">"expr"</span>], state);
 
       <span class="keyword">if</span> (isTrue(ret.val))
@@ -764,7 +764,7 @@ then return the address which is the array address + offset</p>
          <span class="keyword">return</span> eval(node[<span class="string">"false"</span>], expr_ret.state);
    };
 
-   evalNode[<span class="string">"CReturn"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CReturn"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> eval(node[<span class="string">"expr"</span>], state);
    };</pre></div></div>
             
@@ -781,7 +781,7 @@ then return the address which is the array address + offset</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CInit"</span>] = <span class="keyword">function</span>(node, state) {
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CInit"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> eval(node[<span class="string">"assignment"</span>], state);
    };</pre></div></div>
             
@@ -798,7 +798,7 @@ then return the address which is the array address + offset</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CCharConst"</span>] = evalNode[<span class="string">"CFloatConst"</span>] = evalNode[<span class="string">"CStrConst"</span>] = evalNode[<span class="string">"CIntConst"</span>] = <span class="keyword">function</span>(node, state) {</pre></div></div>
+            <div class="content"><div class='highlight'><pre>   evalNode[<span class="string">"CCharConst"</span>] = evalNode[<span class="string">"CFloatConst"</span>] = evalNode[<span class="string">"CStrConst"</span>] = evalNode[<span class="string">"CIntConst"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span></pre></div></div>
             
         </li>
         
@@ -816,15 +816,15 @@ then return the address which is the array address + offset</p>
             <div class="content"><div class='highlight'><pre>      <span class="keyword">return</span> eval(node[<span class="string">"val"</span>], state);
    };
 
-   evalNode[<span class="string">"CStr"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CStr"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> {val: node[<span class="string">"string"</span>], state: state};
    };
 
-   evalNode[<span class="string">"CStrLit"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CStrLit"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> {val: node[<span class="string">"string"</span>], state: state};
    };
 
-   evalNode[<span class="string">"CInteger"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CInteger"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">var</span> radix;
       <span class="keyword">switch</span> (node[<span class="string">"base"</span>]) {
          <span class="keyword">case</span> <span class="string">"d"</span>:
@@ -840,15 +840,15 @@ then return the address which is the array address + offset</p>
       <span class="keyword">return</span> {val: parseInt(node[<span class="string">"int"</span>], radix), state: state};
    };
 
-   evalNode[<span class="string">"CChar"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CChar"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> {val: node[<span class="string">"char"</span>], state: state};
    };
 
-   evalNode[<span class="string">"CChars"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CChars"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> {val: node[<span class="string">"chars"</span>], state: state};
    };
 
-   evalNode[<span class="string">"CFloat"</span>] = <span class="keyword">function</span>(node, state) {
+   evalNode[<span class="string">"CFloat"</span>] = <span class="function"><span class="keyword">function</span><span class="params">(node, state)</span> {</span>
       <span class="keyword">return</span> {val: parseFloat(node[<span class="string">"float"</span>]), state: state};
    };</pre></div></div>
             
@@ -981,7 +981,7 @@ hole is the attribute value to fill in when CThunk is evaluated</p>
             <div class="content"><div class='highlight'><pre>      _(state.dump).last().unshift(newNode);
       _(state.dump).push([enode.val]);
 
-      state.kont = <span class="keyword">function</span>(ui, cm) {
+      state.kont = <span class="function"><span class="keyword">function</span><span class="params">(ui, cm)</span> {</span>
          ui.tell(<span class="string">'Created thunk on assign'</span>);
          ui.hilite_line(newNode[<span class="string">"line"</span>], cm);
       }
